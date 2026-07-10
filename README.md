@@ -6,19 +6,23 @@ back-office d'administration.
 
 ## Architecture
 
-Trois conteneurs orchestrés par Docker Compose :
+Deux conteneurs orchestrés par Docker Compose, sur des ports peu utilisés
+(configurables dans `.env`) :
 
-| Service | Rôle | Exposition |
-|---------|------|------------|
-| `db`    | PostgreSQL 16 (schéma + données de démo au premier démarrage) | réseau interne uniquement, aucun port publié |
-| `api`   | API REST Node.js 22 / Express (auth, membres, rencontres, inscriptions, catégories, contenu, uploads) | réseau interne uniquement |
-| `web`   | nginx (non-root) : frontend React compilé, reverse-proxy `/api`, service des images `/uploads` | port `8080` |
+| Service | Rôle | Port hôte |
+|---------|------|-----------|
+| `app`   | Node.js 22 / Express : API REST **et** frontend React compilé **et** images `/uploads` | `8321` (`APP_PORT`) |
+| `db`    | PostgreSQL 16 (schéma + données de démo au premier démarrage) | `127.0.0.1:56432` (`DB_PORT`) — loopback uniquement, pour l'administration locale |
 
 ```
-Navigateur ──> web (nginx :8080) ──> api (Express :3000) ──> db (PostgreSQL :5432)
-                    │  /uploads (volume partagé, lecture seule)
-                    └─ fichiers statiques React
+Navigateur ──> app (Express :8321) ──> db (PostgreSQL, 127.0.0.1:56432)
+                 ├─ /api/…      API REST
+                 ├─ /uploads/…  images (volume persistant)
+                 └─ /…          frontend React (fallback SPA)
 ```
+
+Le mapping PostgreSQL est lié à `127.0.0.1` : la base reste inaccessible depuis
+le réseau. Supprimez la section `ports:` du service `db` pour la fermer totalement.
 
 - **Frontend** : React 18 + Vite + React Router — reproduction fidèle de la maquette
   (`SLUC Business Club.dc.html`).
@@ -39,7 +43,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-L'application est disponible sur <http://localhost:8080> (port configurable via `WEB_PORT`).
+L'application est disponible sur <http://localhost:8321> (port configurable via `APP_PORT`).
 
 ## Comptes
 
@@ -98,12 +102,12 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
   (20 / h).
 - **Uploads** : taille ≤ 2 Mo, type vérifié par octets magiques (jamais le MIME client),
   nom de fichier aléatoire généré côté serveur (aucune traversée de chemin possible),
-  servis par nginx avec `X-Content-Type-Options: nosniff` et types MIME forcés.
-- **En-têtes** : CSP stricte, `X-Frame-Options: DENY`, `Referrer-Policy`,
-  `Permissions-Policy`, `helmet` côté API, `server_tokens off`.
-- **Conteneurs** : API en utilisateur non-root avec système de fichiers en lecture
-  seule (`read_only` + tmpfs), nginx non privilégié, `no-new-privileges`, PostgreSQL
-  sans port publié sur un réseau interne (`internal: true`).
+  servis avec `X-Content-Type-Options: nosniff` et une CSP `default-src 'none'`.
+- **En-têtes** : CSP stricte, `X-Frame-Options: DENY` et toute la panoplie `helmet`
+  sur l'ensemble des réponses (API, frontend, uploads).
+- **Conteneurs** : application en utilisateur non-root avec système de fichiers en
+  lecture seule (`read_only` + tmpfs), `no-new-privileges`, PostgreSQL publié
+  uniquement sur `127.0.0.1` (inaccessible depuis le réseau).
 - **Base de données** : l'API se connecte avec un rôle dédié `sbc_app` limité au DML
   (pas de DDL, pas de superuser).
 - **Secrets** : uniquement via `.env` (ignoré par git) ; `docker compose` refuse de
@@ -113,7 +117,8 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
 ### Pour la production
 
-- Placez l'application derrière HTTPS (reverse-proxy TLS) et passez `COOKIE_SECURE=true`.
+- Placez l'application derrière HTTPS (reverse-proxy TLS) et passez `COOKIE_SECURE=true`
+  et `TRUST_PROXY=true`.
 - Changez immédiatement les mots de passe initiaux.
 - Sauvegardez les volumes `db_data` (base) et `uploads` (images).
 
@@ -130,8 +135,9 @@ cd web && npm install && npm run dev   # proxy /api → localhost:3000
 
 ```
 ├── docker-compose.yml
+├── Dockerfile          # multi-étages : build React → dépendances API → image finale
 ├── .env.example
 ├── db/init/            # 01 rôle applicatif · 02 schéma · 03 données de démo
-├── server/             # API Express (src/routes, src/middleware, uploads)
-└── web/                # React + Vite, nginx.conf, Dockerfile multi-étages
+├── server/             # API Express (src/routes, src/middleware, uploads, statique)
+└── web/                # sources React + Vite (compilées dans l'image)
 ```

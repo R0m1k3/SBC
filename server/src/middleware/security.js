@@ -1,11 +1,14 @@
 import rateLimit from 'express-rate-limit';
+import { config } from '../config.js';
 
 // CSRF defense-in-depth: session cookie is SameSite=Strict, and every
 // state-changing request must additionally come from our own origin.
+// X-Forwarded-Host is only honoured when explicitly running behind a proxy.
 export function csrfOriginCheck(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const origin = req.headers.origin || '';
-  const host = req.headers['x-forwarded-host'] || req.headers.host || '';
+  const host =
+    (config.trustProxy && req.headers['x-forwarded-host']) || req.headers.host || '';
   if (origin) {
     let originHost;
     try {

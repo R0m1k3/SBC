@@ -12,17 +12,18 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
-    networks:
-      - backend
+    ports:
+      # Loopback only: reachable from the host machine (psql, backups),
+      # never from the network. Remove this mapping to close it entirely.
+      - "127.0.0.1:${DB_PORT:-56432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sbc"]
       interval: 5s
       timeout: 3s
       retries: 12
-    # No published ports: the database is reachable only from the backend network.
 
-  api:
-    build: ./server
+  app:
+    build: .
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -32,15 +33,15 @@ services:
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
       MEMBER_INITIAL_PASSWORD: ${MEMBER_INITIAL_PASSWORD:-}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       UPLOAD_DIR: /data/uploads
     volumes:
       - uploads:/data/uploads
+    ports:
+      - "${APP_PORT:-8321}:3000"
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - backend
-      - frontend
     read_only: true
     tmpfs:
       - /tmp
@@ -51,26 +52,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-
-  web:
-    build: ./web
-    restart: unless-stopped
-    ports:
-      - "${WEB_PORT:-8080}:8080"
-    volumes:
-      - uploads:/var/www/uploads:ro
-    depends_on:
-      - api
-    networks:
-      - frontend
-    security_opt:
-      - no-new-privileges:true
-
-networks:
-  backend:
-    # internal: the db network never routes to the outside world
-    internal: true
-  frontend:
 
 volumes:
   db_data:

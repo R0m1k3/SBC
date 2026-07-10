@@ -12,7 +12,10 @@ export const config = {
   databaseUrl: required('DATABASE_URL'),
   jwtSecret: required('JWT_SECRET'),
   cookieSecure: process.env.COOKIE_SECURE === 'true',
+  // set to "true" only when running behind a reverse proxy (TLS termination)
+  trustProxy: process.env.TRUST_PROXY === 'true',
   uploadDir: process.env.UPLOAD_DIR || '/data/uploads',
+  staticDir: process.env.STATIC_DIR || new URL('../public', import.meta.url).pathname,
   adminInitialPassword: process.env.ADMIN_INITIAL_PASSWORD || '',
   memberInitialPassword: process.env.MEMBER_INITIAL_PASSWORD || '',
   sessionTtlSeconds: 12 * 60 * 60,
