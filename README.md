@@ -34,27 +34,29 @@ le réseau. Supprimez la section `ports:` du service `db` pour la fermer totalem
 ## Démarrage
 
 ```bash
-cp .env.example .env
-# Éditez .env : générez des secrets forts
-#   openssl rand -hex 32   → JWT_SECRET
-#   openssl rand -hex 24   → POSTGRES_PASSWORD et APP_DB_PASSWORD
-# puis choisissez ADMIN_INITIAL_PASSWORD / MEMBER_INITIAL_PASSWORD
-
 docker compose up -d --build
 ```
+
+Aucune configuration n'est requise : des valeurs par défaut sont préréglées
+(mots de passe de base de données, comptes initiaux) et le secret JWT est
+généré aléatoirement au démarrage s'il n'est pas fourni. Compatible avec un
+déploiement direct depuis Git dans Portainer.
+
+Pour la production, surchargez ces valeurs via un fichier `.env`
+(voir `.env.example`) ou les variables d'environnement de Portainer.
 
 L'application est disponible sur <http://localhost:8321> (port configurable via `APP_PORT`).
 
 ## Comptes
 
-Les comptes de démonstration sont créés **verrouillés** (aucun mot de passe en dur
-dans le dépôt). Au démarrage, l'API leur applique le mot de passe des variables
-d'environnement — uniquement s'ils n'en ont pas déjà un :
+Les comptes de démonstration sont créés **verrouillés** en base. Au démarrage,
+l'API leur applique le mot de passe des variables d'environnement — uniquement
+s'ils n'en ont pas déjà un :
 
-| Rôle | Email | Mot de passe initial |
-|------|-------|----------------------|
-| Admin | `admin@sluc-businessclub.fr` | `ADMIN_INITIAL_PASSWORD` |
-| Membre (×12) | email de contact de chaque entreprise de démo, ex. `contact@lorraine-assurances.fr` | `MEMBER_INITIAL_PASSWORD` |
+| Rôle | Email | Mot de passe initial (défaut) |
+|------|-------|-------------------------------|
+| Admin | `admin@sluc-businessclub.fr` | `ADMIN_INITIAL_PASSWORD` (défaut : `SlucAdmin2026!`) |
+| Membre (×12) | email de contact de chaque entreprise de démo, ex. `contact@lorraine-assurances.fr` | `MEMBER_INITIAL_PASSWORD` (défaut : `SlucMembre2026!`) |
 
 Changez le mot de passe admin après la première connexion (Espace membre/admin →
 formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
@@ -88,8 +90,8 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
 - **Injection SQL** : 100 % de requêtes paramétrées (`pg`), aucun SQL concaténé.
 - **Authentification** : bcrypt (coût 12), comparaison à temps constant même si
-  l'email est inconnu, JWT HS256 signé (secret ≥ 32 caractères exigé au démarrage),
-  session de 12 h.
+  l'email est inconnu, JWT HS256 signé (secret fourni via `JWT_SECRET` ou généré
+  aléatoirement au démarrage), session de 12 h.
 - **Cookies** : `httpOnly`, `SameSite=Strict`, `Secure` activable (`COOKIE_SECURE=true`
   derrière HTTPS).
 - **CSRF** : cookie SameSite=Strict + vérification de l'en-tête `Origin` sur toutes
@@ -110,8 +112,10 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
   uniquement sur `127.0.0.1` (inaccessible depuis le réseau).
 - **Base de données** : l'API se connecte avec un rôle dédié `sbc_app` limité au DML
   (pas de DDL, pas de superuser).
-- **Secrets** : uniquement via `.env` (ignoré par git) ; `docker compose` refuse de
-  démarrer sans eux ; aucun hash ni mot de passe committé.
+- **Secrets** : surchargeables via `.env` / variables d'environnement ; le secret
+  JWT n'est jamais committé (généré aléatoirement si absent) ; les valeurs par
+  défaut préréglées ne servent qu'au démarrage clé en main et doivent être
+  remplacées en production.
 - **Erreurs** : les détails restent dans les logs serveur, les clients reçoivent un
   message générique.
 
@@ -119,7 +123,9 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
 - Placez l'application derrière HTTPS (reverse-proxy TLS) et passez `COOKIE_SECURE=true`
   et `TRUST_PROXY=true`.
-- Changez immédiatement les mots de passe initiaux.
+- Surchargez les valeurs par défaut (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`,
+  `JWT_SECRET`, mots de passe initiaux) et changez le mot de passe admin
+  après la première connexion.
 - Sauvegardez les volumes `db_data` (base) et `uploads` (images).
 
 ## Développement local (sans Docker)

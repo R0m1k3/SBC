@@ -7,8 +7,10 @@ services:
     environment:
       POSTGRES_DB: sbc
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+      # Preconfigured defaults so the stack deploys without any .env
+      # (Portainer, etc.). Override them in production.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sbc-pg-c7f3a91d284e6b05}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-sbc-app-9e12d47ab8c3f605}
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -28,10 +30,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
-      DATABASE_URL: postgres://sbc_app:${APP_DB_PASSWORD}@db:5432/sbc
-      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
-      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
-      MEMBER_INITIAL_PASSWORD: ${MEMBER_INITIAL_PASSWORD:-}
+      DATABASE_URL: postgres://sbc_app:${APP_DB_PASSWORD:-sbc-app-9e12d47ab8c3f605}@db:5432/sbc
+      # Empty by default: the app then generates a random ephemeral secret at
+      # startup. Set a fixed value to keep sessions across restarts.
+      JWT_SECRET: ${JWT_SECRET:-}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-SlucAdmin2026!}
+      MEMBER_INITIAL_PASSWORD: ${MEMBER_INITIAL_PASSWORD:-SlucMembre2026!}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       TRUST_PROXY: ${TRUST_PROXY:-false}
       UPLOAD_DIR: /data/uploads

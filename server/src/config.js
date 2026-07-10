@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 const required = (name) => {
   const v = process.env[name];
   if (!v) {
@@ -7,10 +9,22 @@ const required = (name) => {
   return v;
 };
 
+// Session-signing secret: taken from the environment when provided, otherwise
+// generated randomly at startup (never committed to the repo). With a generated
+// secret, sessions simply expire when the container restarts.
+let jwtSecret = process.env.JWT_SECRET || '';
+if (jwtSecret.length < 32) {
+  jwtSecret = crypto.randomBytes(48).toString('hex');
+  console.warn(
+    'JWT_SECRET absent or shorter than 32 characters: using a random ephemeral secret. ' +
+      'Sessions will not survive a restart — set JWT_SECRET to persist them.'
+  );
+}
+
 export const config = {
   port: Number(process.env.PORT || 3000),
   databaseUrl: required('DATABASE_URL'),
-  jwtSecret: required('JWT_SECRET'),
+  jwtSecret,
   cookieSecure: process.env.COOKIE_SECURE === 'true',
   // set to "true" only when running behind a reverse proxy (TLS termination)
   trustProxy: process.env.TRUST_PROXY === 'true',
@@ -21,8 +35,3 @@ export const config = {
   sessionTtlSeconds: 12 * 60 * 60,
   cookieName: 'sbc_session',
 };
-
-if (config.jwtSecret.length < 32) {
-  console.error('JWT_SECRET must be at least 32 characters long.');
-  process.exit(1);
-}
