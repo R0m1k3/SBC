@@ -61,6 +61,12 @@ services:
       - uploads:/data/uploads
     ports:
       - "${APP_PORT:-8321}:3000"
+    networks:
+      default:
+      proxy:
+        aliases:
+          # Stable name for the nginx upstream: proxy_pass http://sbc-app:3000;
+          - sbc-app
     depends_on:
       db:
         condition: service_healthy
@@ -76,6 +82,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
+
+networks:
+  default:
+  # Existing network of the nginx reverse-proxy stack. Create it first if it
+  # does not exist: docker network create nginx_default
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-nginx_default}
 
 volumes:
   db_data:

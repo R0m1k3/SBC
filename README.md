@@ -24,6 +24,22 @@ Navigateur ──> app (Express :8321) ──> db (PostgreSQL, 127.0.0.1:58412)
 Le mapping PostgreSQL est lié à `127.0.0.1` : la base reste inaccessible depuis
 le réseau. Supprimez la section `ports:` du service `db` pour la fermer totalement.
 
+### Reverse-proxy nginx existant
+
+Le conteneur `app` est aussi rattaché au réseau externe `nginx_default`
+(configurable via `PROXY_NETWORK`) avec l'alias **`sbc-app`**. Depuis votre
+stack nginx, pointez simplement l'upstream vers :
+
+```nginx
+proxy_pass http://sbc-app:3000;
+```
+
+Ce réseau doit exister avant le déploiement (`docker network create nginx_default`
+s'il manque). Derrière nginx en HTTPS, passez `TRUST_PROXY=true` et
+`COOKIE_SECURE=true`, et transmettez les en-têtes `Host`/`X-Forwarded-*`
+(`proxy_set_header Host $http_host;`). La base de données, elle, reste hors du
+réseau du proxy.
+
 - **Frontend** : React 18 + Vite + React Router — reproduction fidèle de la maquette
   (`SLUC Business Club.dc.html`).
 - **Backend** : Express, `pg` (requêtes paramétrées), `zod` (validation), `bcryptjs`
