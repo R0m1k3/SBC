@@ -17,12 +17,30 @@ services:
     ports:
       # Loopback only: reachable from the host machine (psql, backups),
       # never from the network. Remove this mapping to close it entirely.
-      - "127.0.0.1:${DB_PORT:-56432}:5432"
+      - "127.0.0.1:${DB_PORT:-58412}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sbc"]
       interval: 5s
       timeout: 3s
       retries: 12
+
+  # One-shot at every stack start: realigns the sbc_app role password with
+  # APP_DB_PASSWORD, healing volumes initialized with an older value.
+  db-sync:
+    image: postgres:16-alpine
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGDATABASE: sbc
+      PGPASSWORD: ${POSTGRES_PASSWORD:-sbc-pg-c7f3a91d284e6b05}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-sbc-app-9e12d47ab8c3f605}
+    volumes:
+      - ./db/sync-app-role.sh:/sync-app-role.sh:ro
+    entrypoint: ["/bin/sh", "/sync-app-role.sh"]
 
   app:
     build: .
@@ -46,6 +64,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      db-sync:
+        condition: service_completed_successfully
     read_only: true
     tmpfs:
       - /tmp

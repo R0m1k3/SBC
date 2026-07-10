@@ -12,10 +12,10 @@ Deux conteneurs orchestrés par Docker Compose, sur des ports peu utilisés
 | Service | Rôle | Port hôte |
 |---------|------|-----------|
 | `app`   | Node.js 22 / Express : API REST **et** frontend React compilé **et** images `/uploads` | `8321` (`APP_PORT`) |
-| `db`    | PostgreSQL 16 (schéma + données de démo au premier démarrage) | `127.0.0.1:56432` (`DB_PORT`) — loopback uniquement, pour l'administration locale |
+| `db`    | PostgreSQL 16 (schéma + données de démo au premier démarrage) | `127.0.0.1:58412` (`DB_PORT`) — loopback uniquement, pour l'administration locale |
 
 ```
-Navigateur ──> app (Express :8321) ──> db (PostgreSQL, 127.0.0.1:56432)
+Navigateur ──> app (Express :8321) ──> db (PostgreSQL, 127.0.0.1:58412)
                  ├─ /api/…      API REST
                  ├─ /uploads/…  images (volume persistant)
                  └─ /…          frontend React (fallback SPA)
@@ -118,6 +118,17 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
   remplacées en production.
 - **Erreurs** : les détails restent dans les logs serveur, les clients reçoivent un
   message générique.
+
+## Dépannage
+
+- **`password authentication failed for user "sbc_app"`** : le volume de la base
+  a été initialisé avec un autre `APP_DB_PASSWORD`. Le service one-shot `db-sync`
+  resynchronise automatiquement le mot de passe du rôle à chaque démarrage de la
+  stack — redéployez simplement. Si le mot de passe **superuser** a lui aussi
+  changé (`POSTGRES_PASSWORD`), remettez l'ancienne valeur ou supprimez le volume
+  `db_data` pour repartir de zéro (les données de démo seront recréées).
+- **Port déjà utilisé** : changez `APP_PORT` ou `DB_PORT` dans les variables
+  d'environnement.
 
 ### Pour la production
 
