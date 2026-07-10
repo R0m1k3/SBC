@@ -47,7 +47,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: "3000"
+      PORT: "8321"
       DATABASE_URL: postgres://sbc_app:${APP_DB_PASSWORD:-sbc-app-9e12d47ab8c3f605}@db:5432/sbc
       # Empty by default: the app then generates a random ephemeral secret at
       # startup. Set a fixed value to keep sessions across restarts.
@@ -60,12 +60,12 @@ services:
     volumes:
       - uploads:/data/uploads
     ports:
-      - "${APP_PORT:-8321}:3000"
+      - "${APP_PORT:-8321}:8321"
     networks:
       default:
       proxy:
         aliases:
-          # Stable name for the nginx upstream: proxy_pass http://sbc-app:3000;
+          # Stable name for the nginx upstream: proxy_pass http://sbc-app:8321;
           - sbc-app
     depends_on:
       db:
@@ -78,7 +78,7 @@ services:
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8321/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 6

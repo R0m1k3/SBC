@@ -26,5 +26,5 @@ COPY --from=webbuild /build/dist ./public
 # this ownership on first use
 RUN mkdir -p /data/uploads && chown node:node /data/uploads
 USER node
-EXPOSE 3000
+EXPOSE 8321
 CMD ["node", "src/index.js"]

@@ -22,7 +22,7 @@ if (jwtSecret.length < 32) {
 }
 
 export const config = {
-  port: Number(process.env.PORT || 3000),
+  port: Number(process.env.PORT || 8321),
   databaseUrl: required('DATABASE_URL'),
   jwtSecret,
   cookieSecure: process.env.COOKIE_SECURE === 'true',

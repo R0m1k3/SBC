@@ -31,7 +31,7 @@ Le conteneur `app` est aussi rattaché au réseau externe `nginx_default`
 stack nginx, pointez simplement l'upstream vers :
 
 ```nginx
-proxy_pass http://sbc-app:3000;
+proxy_pass http://sbc-app:8321;
 ```
 
 Ce réseau doit exister avant le déploiement (`docker network create nginx_default`
@@ -161,7 +161,7 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 # Terminal 1 — base de données PostgreSQL locale + variables d'env, puis :
 cd server && npm install && npm start
 # Terminal 2
-cd web && npm install && npm run dev   # proxy /api → localhost:3000
+cd web && npm install && npm run dev   # proxy /api → localhost:8321
 ```
 
 ## Structure
