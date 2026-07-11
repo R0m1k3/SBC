@@ -23,7 +23,13 @@ if (jwtSecret.length < 32) {
 
 export const config = {
   port: Number(process.env.PORT || 8321),
-  databaseUrl: required('DATABASE_URL'),
+  db: {
+    host: process.env.PGHOST || 'localhost',
+    port: Number(process.env.PGPORT || 5432),
+    database: process.env.PGDATABASE || 'sbc',
+    user: process.env.PGUSER || 'sbc_app',
+    password: required('PGPASSWORD'),
+  },
   jwtSecret,
   cookieSecure: process.env.COOKIE_SECURE === 'true',
   // set to "true" only when running behind a reverse proxy (TLS termination)

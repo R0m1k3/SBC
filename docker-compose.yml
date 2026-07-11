@@ -18,6 +18,12 @@ services:
       # Loopback only: reachable from the host machine (psql, backups),
       # never from the network. Remove this mapping to close it entirely.
       - "127.0.0.1:${DB_PORT:-58412}:5432"
+    networks:
+      default:
+        aliases:
+          # Unique hostname: "db" alone is ambiguous when other stacks on a
+          # shared network (nginx_default) also expose a "db" service.
+          - sbc-db
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sbc"]
       interval: 5s
@@ -33,7 +39,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      PGHOST: db
+      PGHOST: sbc-db
       PGUSER: postgres
       PGDATABASE: sbc
       PGPASSWORD: ${POSTGRES_PASSWORD:-sbc-pg-c7f3a91d284e6b05}
@@ -48,7 +54,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: "8321"
-      DATABASE_URL: postgres://sbc_app:${APP_DB_PASSWORD:-sbc-app-9e12d47ab8c3f605}@db:5432/sbc
+      # Discrete variables (no URL): immune to special characters in the
+      # password and to hostname ambiguity on shared networks
+      PGHOST: sbc-db
+      PGPORT: "5432"
+      PGDATABASE: sbc
+      PGUSER: sbc_app
+      PGPASSWORD: ${APP_DB_PASSWORD:-sbc-app-9e12d47ab8c3f605}
       # Empty by default: the app then generates a random ephemeral secret at
       # startup. Set a fixed value to keep sessions across restarts.
       JWT_SECRET: ${JWT_SECRET:-}
