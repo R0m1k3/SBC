@@ -29,6 +29,10 @@ export const config = {
     database: process.env.PGDATABASE || 'sbc',
     user: process.env.PGUSER || 'sbc_app',
     password: required('PGPASSWORD'),
+    // When provided, the app bootstraps the database itself at startup
+    // (create database/role, apply schema, seed demo data) — idempotent.
+    superuser: process.env.PG_SUPERUSER || 'postgres',
+    superuserPassword: process.env.PG_SUPERUSER_PASSWORD || '',
   },
   jwtSecret,
   cookieSecure: process.env.COOKIE_SECURE === 'true',

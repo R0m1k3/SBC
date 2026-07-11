@@ -1,12 +1,12 @@
--- SLUC Business Club — schema
+-- SLUC Business Club — idempotent schema (applied at every app startup)
 CREATE EXTENSION IF NOT EXISTS citext;
 
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
     id   SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE CHECK (char_length(name) BETWEEN 1 AND 80)
 );
 
-CREATE TABLE members (
+CREATE TABLE IF NOT EXISTS members (
     id           SERIAL PRIMARY KEY,
     nom          TEXT NOT NULL CHECK (char_length(nom) BETWEEN 1 AND 120),
     secteur      TEXT NOT NULL DEFAULT '' CHECK (char_length(secteur) <= 120),
@@ -24,7 +24,7 @@ CREATE TABLE members (
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id            SERIAL PRIMARY KEY,
     email         CITEXT NOT NULL UNIQUE CHECK (char_length(email) <= 254),
     password_hash TEXT NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE users (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE rencontres (
+CREATE TABLE IF NOT EXISTS rencontres (
     id          SERIAL PRIMARY KEY,
     titre       TEXT NOT NULL CHECK (char_length(titre) BETWEEN 1 AND 200),
     date_renc   DATE NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE rencontres (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE inscriptions (
+CREATE TABLE IF NOT EXISTS inscriptions (
     id           SERIAL PRIMARY KEY,
     rencontre_id INTEGER NOT NULL REFERENCES rencontres(id) ON DELETE CASCADE,
     nom          TEXT NOT NULL CHECK (char_length(nom) BETWEEN 1 AND 120),
@@ -54,9 +54,9 @@ CREATE TABLE inscriptions (
     statut       TEXT NOT NULL DEFAULT 'en_attente' CHECK (statut IN ('confirmee', 'en_attente')),
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_inscriptions_rencontre ON inscriptions(rencontre_id);
+CREATE INDEX IF NOT EXISTS idx_inscriptions_rencontre ON inscriptions(rencontre_id);
 
-CREATE TABLE rencontres_passees (
+CREATE TABLE IF NOT EXISTS rencontres_passees (
     id           SERIAL PRIMARY KEY,
     date_label   TEXT NOT NULL,
     lieu         TEXT NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE rencontres_passees (
     nb_photos    INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE demandes_adhesion (
+CREATE TABLE IF NOT EXISTS demandes_adhesion (
     id         SERIAL PRIMARY KEY,
     nom        TEXT NOT NULL CHECK (char_length(nom) BETWEEN 1 AND 120),
     fonction   TEXT NOT NULL DEFAULT '' CHECK (char_length(fonction) <= 120),
@@ -76,12 +76,7 @@ CREATE TABLE demandes_adhesion (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE site_content (
+CREATE TABLE IF NOT EXISTS site_content (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT ''
 );
-
--- Least-privilege grants for the application role (no DDL, no other schemas)
-GRANT USAGE ON SCHEMA public TO sbc_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO sbc_app;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO sbc_app;

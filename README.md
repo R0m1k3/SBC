@@ -12,7 +12,7 @@ Deux conteneurs orchestrés par Docker Compose, sur des ports peu utilisés
 | Service | Rôle | Port hôte |
 |---------|------|-----------|
 | `app`   | Node.js 22 / Express : API REST **et** frontend React compilé **et** images `/uploads` | `8321` (`APP_PORT`) |
-| `db`    | PostgreSQL 16 (schéma + données de démo au premier démarrage) | `127.0.0.1:58412` (`DB_PORT`) — loopback uniquement, pour l'administration locale |
+| `db`    | PostgreSQL 16 (vierge : l'application l'initialise elle-même) | `127.0.0.1:58412` (`DB_PORT`) — loopback uniquement, pour l'administration locale |
 
 ```
 Navigateur ──> app (Express :8321) ──> db (PostgreSQL, 127.0.0.1:58412)
@@ -44,8 +44,9 @@ réseau du proxy.
   (`SLUC Business Club.dc.html`).
 - **Backend** : Express, `pg` (requêtes paramétrées), `zod` (validation), `bcryptjs`
   (hachage), JWT en cookie httpOnly, `helmet`, `express-rate-limit`, `multer` (uploads).
-- **Base** : PostgreSQL 16, initialisée par `db/init/` (rôle applicatif restreint,
-  schéma, données de démonstration).
+- **Base** : PostgreSQL 16. L'application l'initialise **elle-même à chaque
+  démarrage**, de façon idempotente (base, rôle restreint `sbc_app`, schéma,
+  données de démo) : aucun script monté, aucun état de volume requis.
 
 ## Démarrage
 
@@ -137,11 +138,11 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
 ## Dépannage
 
-- **`password authentication failed for user "sbc_app"`** : le volume de la base
-  a été initialisé avec un autre `APP_DB_PASSWORD`. Le service one-shot `db-sync`
-  resynchronise automatiquement le mot de passe du rôle à chaque démarrage de la
-  stack — redéployez simplement. Si le mot de passe **superuser** a lui aussi
-  changé (`POSTGRES_PASSWORD`), remettez l'ancienne valeur ou supprimez le volume
+- **`password authentication failed for user "sbc_app"`** : impossible dans la
+  version courante tant que `PG_SUPERUSER_PASSWORD` correspond au mot de passe
+  superuser du volume — l'application recrée/realigne le rôle et le schéma à
+  chaque démarrage. Si le mot de passe **superuser** du volume diffère de
+  `POSTGRES_PASSWORD`, remettez l'ancienne valeur ou supprimez le volume
   `db_data` pour repartir de zéro (les données de démo seront recréées).
 - **Port déjà utilisé** : changez `APP_PORT` ou `DB_PORT` dans les variables
   d'environnement.
@@ -170,7 +171,6 @@ cd web && npm install && npm run dev   # proxy /api → localhost:8321
 ├── docker-compose.yml
 ├── Dockerfile          # multi-étages : build React → dépendances API → image finale
 ├── .env.example
-├── db/init/            # 01 rôle applicatif · 02 schéma · 03 données de démo
-├── server/             # API Express (src/routes, src/middleware, uploads, statique)
+├── server/             # API Express (src/routes, src/sql = schéma + seed, uploads)
 └── web/                # sources React + Vite (compilées dans l'image)
 ```

@@ -6,6 +6,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { waitForDb } from './db.js';
+import { bootstrapDatabase } from './bootstrap-db.js';
 import { applyInitialPasswords } from './bootstrap.js';
 import { attachUser } from './middleware/auth.js';
 import { csrfOriginCheck, globalLimiter } from './middleware/security.js';
@@ -107,6 +108,7 @@ app.use((err, _req, res, _next) => {
 });
 
 try {
+  await bootstrapDatabase();
   await waitForDb();
   await applyInitialPasswords();
   app.listen(config.port, () => {
