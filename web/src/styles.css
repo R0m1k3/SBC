@@ -35,6 +35,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 .marquee-track:hover { animation-play-state: paused; }
 .marquee-mask {
   position: relative;
+  overflow: hidden;
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
@@ -145,3 +146,33 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+/* Admin backend: fixed left sidebar becomes a normal stacked block on
+   narrow screens instead of squeezing the content area. */
+@media (max-width: 860px) {
+  .admin-shell { flex-direction: column !important; }
+  .admin-sidebar { width: 100% !important; height: auto !important; position: static !important; }
+  .admin-content-header { padding: 16px 20px !important; }
+  .admin-content-body { padding: 20px !important; }
+}
+
+@media (max-width: 640px) {
+  .container { padding-left: 20px; padding-right: 20px; }
+
+  /* Header nav: tighter spacing so the extra links (added alongside the
+     new "rencontres passées" page) wrap without feeling cramped. */
+  .site-nav { gap: 2px; }
+  .nav-btn { padding: 8px 10px; font-size: 13.5px; }
+
+  /* Past event card (home + /rencontres-passees): reduce padding and
+     stack photos at a shorter height once the grid collapses to 1 col. */
+  .past-event-card { padding: 22px !important; gap: 22px !important; }
+  .past-event-card h3 { font-size: 24px !important; }
+  .past-event-photos { height: 200px !important; }
+
+  /* Full-screen photo carousel */
+  .carousel-overlay { padding: 16px 14px 12px !important; }
+  .carousel-title { font-size: 17px !important; max-width: 60vw; }
+  .carousel-arrow { width: 42px !important; height: 42px !important; font-size: 20px !important; }
+  .carousel-thumb { width: 58px !important; height: 42px !important; }
+}

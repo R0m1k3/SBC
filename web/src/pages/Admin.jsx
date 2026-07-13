@@ -105,8 +105,8 @@ export function AdminShell() {
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--admin-bg)' }}>
-      <aside style={{ width: 250, flexShrink: 0, background: 'var(--dark)', color: '#fff', display: 'flex', flexDirection: 'column', padding: '26px 0', position: 'sticky', top: 0, height: '100vh' }}>
+    <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--admin-bg)' }}>
+      <aside className="admin-sidebar" style={{ width: 250, flexShrink: 0, background: 'var(--dark)', color: '#fff', display: 'flex', flexDirection: 'column', padding: '26px 0', position: 'sticky', top: 0, height: '100vh' }}>
         <div style={{ padding: '0 24px 26px', borderBottom: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/assets/logo.jpg" alt="SLUC" style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 4, background: '#fff' }} />
           <div style={{ lineHeight: 1.1 }}>
@@ -132,17 +132,17 @@ export function AdminShell() {
       </aside>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ background: '#fff', borderBottom: '1px solid var(--border)', padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="admin-content-header" style={{ background: '#fff', borderBottom: '1px solid var(--border)', padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 className="serif" style={{ fontSize: 24, fontWeight: 600 }}>{current.title}</h1>
             <div style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 2, textTransform: 'capitalize' }}>{today}</div>
           </div>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#FBEDEC', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#FBEDEC', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
             {(user.email || 'AD').slice(0, 2).toUpperCase()}
           </div>
         </div>
 
-        <div style={{ padding: '36px 40px' }}>
+        <div className="admin-content-body" style={{ padding: '36px 40px' }}>
           {tab === 'dashboard' && <Dashboard />}
           {tab === 'membres' && <MembersTab />}
           {tab === 'rencontres' && <RencontresTab />}

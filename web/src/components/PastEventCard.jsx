@@ -25,7 +25,7 @@ export default function PastEventCard({ event }) {
   return (
     <>
       <article
-        className="card hero-grid"
+        className="card hero-grid past-event-card"
         style={{ display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 40, alignItems: 'center', padding: 36, cursor: hasPhotos ? 'pointer' : 'default' }}
         onClick={hasPhotos ? () => setCarouselAt(0) : undefined}
       >
@@ -45,7 +45,7 @@ export default function PastEventCard({ event }) {
             )}
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 10, height: 240 }}>
+        <div className="past-event-photos" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 10, height: 240 }}>
           {cell(0, { gridRow: 'span 2' })}
           {cell(1)}
           {photos.length > 3 ? (

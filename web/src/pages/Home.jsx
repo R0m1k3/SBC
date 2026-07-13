@@ -185,19 +185,21 @@ export default function Home() {
             <span className="btn-link" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>Voir l'annuaire complet →</span>
           </Link>
         </div>
-        <div className="marquee-mask">
-          <div className="marquee-track">
-            {marquee.map((m, i) => (
-              <div key={`${m.id}-${i}`} style={{ width: 210, flexShrink: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div className={m.logo_path ? '' : 'placeholder-pattern'} style={{ height: 56, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 10, color: '#a8a099', overflow: 'hidden', background: m.logo_path ? '#fff' : undefined }}>
-                  {m.logo_path ? <img src={m.logo_path} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : 'logo'}
+        <div className="container">
+          <div className="marquee-mask">
+            <div className="marquee-track">
+              {marquee.map((m, i) => (
+                <div key={`${m.id}-${i}`} style={{ width: 210, flexShrink: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div className={m.logo_path ? '' : 'placeholder-pattern'} style={{ height: 56, borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 10, color: '#a8a099', overflow: 'hidden', background: m.logo_path ? '#fff' : undefined }}>
+                    {m.logo_path ? <img src={m.logo_path} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : 'logo'}
+                  </div>
+                  <div>
+                    <div className="serif" style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.2 }}>{m.nom}</div>
+                    <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--red)', fontWeight: 600, marginTop: 6 }}>{m.secteur}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="serif" style={{ fontSize: 17, fontWeight: 600, lineHeight: 1.2 }}>{m.nom}</div>
-                  <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--red)', fontWeight: 600, marginTop: 6 }}>{m.secteur}</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>

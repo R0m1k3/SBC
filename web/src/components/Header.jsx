@@ -13,7 +13,7 @@ export default function Header() {
     >
       <div
         className="container"
-        style={{ height: 76, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}
+        style={{ minHeight: 76, paddingTop: 12, paddingBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}
       >
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
           <img src="/assets/logo.jpg" alt="SLUC Business Club Nancy" style={{ height: 50, width: 'auto', display: 'block' }} />
@@ -24,7 +24,7 @@ export default function Header() {
             </span>
           </span>
         </Link>
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <nav className="site-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <NavLink to="/" end className={navLinkClass}>Accueil</NavLink>
           <NavLink to="/annuaire" className={navLinkClass}>Annuaire</NavLink>
           <NavLink to="/rencontres-passees" className={navLinkClass}>Rencontres passées</NavLink>
