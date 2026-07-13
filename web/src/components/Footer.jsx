@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
+import { usePublicData } from '../lib/usePublic.js';
 
 const linkStyle = { color: '#B7AFA6', fontSize: 14, textDecoration: 'none' };
 
 export default function Footer() {
+  const { data } = usePublicData();
+  const memberCount = data?.members?.length ?? 0;
+
   return (
     <footer style={{ background: 'var(--footer)', color: '#B7AFA6', padding: '64px 0 34px' }}>
       <div className="container grid-4" style={{ gridTemplateColumns: '1.6fr 1fr 1fr 1fr', gap: 40 }}>
@@ -20,6 +24,9 @@ export default function Footer() {
           <p style={{ fontSize: 14, lineHeight: 1.65, maxWidth: 320 }}>
             Le réseau d'affaires des partenaires du SLUC Nancy Basket. Le business se joue en équipe.
           </p>
+          <div style={{ marginTop: 16, fontSize: 14 }}>
+            <strong style={{ color: '#fff' }}>{memberCount}</strong> entreprises membres
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: '#6E675F', fontWeight: 600, marginBottom: 16 }}>
