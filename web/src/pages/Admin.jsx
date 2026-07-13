@@ -4,14 +4,19 @@ import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts, statutLabel } from '../lib/api.js';
 import { MembersTab, RencontresTab, InscriptionsTab } from '../components/admin/AdminTabs.jsx';
 import { CategoriesTab, ContenuTab } from '../components/admin/AdminContent.jsx';
+import { UsersTab } from '../components/admin/AdminUsers.jsx';
 
+// Moderators only get members/rencontres/inscriptions — everything else
+// (dashboard, taxonomy, site content, staff account management) is
+// admin-only, enforced both here (sidebar) and server-side (routes).
 const TABS = [
-  { key: 'dashboard', icon: '◧', label: 'Tableau de bord', title: 'Tableau de bord' },
-  { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres' },
-  { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres' },
-  { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions' },
-  { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories' },
-  { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site' },
+  { key: 'dashboard', icon: '◧', label: 'Tableau de bord', title: 'Tableau de bord', roles: ['admin'] },
+  { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator'] },
+  { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator'] },
+  { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator'] },
+  { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
+  { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
+  { key: 'utilisateurs', icon: '⚿', label: 'Administrateurs', title: 'Administrateurs & modérateurs', roles: ['admin'] },
 ];
 
 function Dashboard() {
@@ -86,13 +91,14 @@ function Dashboard() {
 }
 
 // Rendered inside /espace-membre once a logged-in user is confirmed as
-// admin (see Espace.jsx). Assumes an authenticated admin user — no auth
-// gate here, the caller already checked it.
+// admin or moderator (see Espace.jsx). Assumes an authenticated staff
+// user — no auth gate here, the caller already checked it.
 export function AdminShell() {
   const { user, logout } = useAuth();
-  const [tab, setTab] = useState('dashboard');
+  const tabs = TABS.filter((t) => t.roles.includes(user.role));
+  const [tab, setTab] = useState(tabs[0].key);
 
-  const current = TABS.find((t) => t.key === tab);
+  const current = tabs.find((t) => t.key === tab) || tabs[0];
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
@@ -101,12 +107,14 @@ export function AdminShell() {
         <div style={{ padding: '0 24px 26px', borderBottom: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <img src="/assets/logo.jpg" alt="SLUC" style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 4, background: '#fff' }} />
           <div style={{ lineHeight: 1.1 }}>
-            <div className="serif" style={{ fontSize: 16, fontWeight: 600 }}>Admin</div>
+            <div className="serif" style={{ fontSize: 16, fontWeight: 600 }}>
+              {user.role === 'admin' ? 'Admin' : 'Modérateur'}
+            </div>
             <div style={{ fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: '#8A8279' }}>Business Club</div>
           </div>
         </div>
         <nav style={{ padding: '20px 14px', display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button key={t.key} className={`admin-nav-btn${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
               {t.icon} {t.label}
             </button>
@@ -138,6 +146,7 @@ export function AdminShell() {
           {tab === 'inscriptions' && <InscriptionsTab />}
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'contenu' && <ContenuTab />}
+          {tab === 'utilisateurs' && <UsersTab />}
         </div>
       </div>
     </div>

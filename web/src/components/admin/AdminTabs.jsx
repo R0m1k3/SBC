@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, dateParts, seasonLabel, statutLabel } from '../../lib/api.js';
 import Modal from '../Modal.jsx';
+import { AccessCell, CredentialsModal } from './AccessControls.jsx';
 
 /* ---------------- Members ---------------- */
 
@@ -88,95 +89,6 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
   );
 }
 
-// Shows a just-generated temporary password so the admin can relay it to
-// the member (copy button). It also stays readable in the members table
-// below until the member changes it.
-function CredentialsModal({ email, tempPassword, onClose }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(tempPassword);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable (non-HTTPS, older browser) — password stays selectable */
-    }
-  };
-  return (
-    <Modal onClose={onClose} maxWidth={440} header={{ kicker: 'Accès membre', title: 'Mot de passe temporaire généré' }}>
-      <div style={{ padding: '26px 30px' }}>
-        <p style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 18 }}>
-          Communiquez ces identifiants à <strong>{email}</strong>. Ce mot de passe devra être
-          changé dès la première connexion.
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--admin-bg)', borderRadius: 6, padding: '14px 16px' }}>
-          <code style={{ fontSize: 18, fontWeight: 700, letterSpacing: '.02em', flex: 1, userSelect: 'all' }}>{tempPassword}</code>
-          <button type="button" className="btn btn-outline-soft btn-sm" style={{ fontSize: 13, padding: '8px 14px' }} onClick={copy}>
-            {copied ? '✓ Copié' : 'Copier'}
-          </button>
-        </div>
-        <p style={{ fontSize: 12.5, color: 'var(--gray-light)', lineHeight: 1.55, marginTop: 12 }}>
-          Ce mot de passe reste visible dans la liste des membres tant qu'il n'a pas été changé.
-        </p>
-        <button type="button" className="btn btn-dark btn-sm" style={{ width: '100%', marginTop: 20, fontSize: 14 }} onClick={onClose}>
-          Fermer
-        </button>
-      </div>
-    </Modal>
-  );
-}
-
-function AccessCell({ member, onGenerate }) {
-  const [copied, setCopied] = useState(false);
-  const copy = async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
-    }
-  };
-
-  if (!member.email) {
-    return (
-      <span style={{ fontSize: 12.5, color: 'var(--gray-light)' }} title="Ajoutez un email pour créer un accès">
-        —
-      </span>
-    );
-  }
-  if (!member.has_login) {
-    return (
-      <button type="button" className="btn-link" style={{ fontSize: 12.5 }} onClick={() => onGenerate(member)}>
-        Créer l'accès
-      </button>
-    );
-  }
-  if (member.must_change_password && member.temp_password) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <code style={{ fontSize: 12, background: 'var(--admin-bg)', padding: '4px 8px', borderRadius: 3, fontWeight: 600 }}>
-          {member.temp_password}
-        </code>
-        <button type="button" className="btn-link-gray" style={{ fontSize: 11.5 }} onClick={() => copy(member.temp_password)}>
-          {copied ? '✓' : 'copier'}
-        </button>
-        <button type="button" className="btn-link-gray" style={{ fontSize: 11.5 }} onClick={() => onGenerate(member)}>
-          réinitialiser
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <span className="badge badge-green">Défini</span>
-      <button type="button" className="btn-link-gray" style={{ fontSize: 11.5 }} onClick={() => onGenerate(member)}>
-        réinitialiser
-      </button>
-    </div>
-  );
-}
-
 export function MembersTab() {
   const [members, setMembers] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -206,7 +118,7 @@ export function MembersTab() {
     setAccessError('');
     try {
       const d = await api.post(`/api/admin/members/${m.id}/reset-access`);
-      setCredentials({ email: m.email, tempPassword: d.tempPassword });
+      setCredentials({ recipient: m.email, tempPassword: d.tempPassword });
       reload();
     } catch (err) {
       setAccessError(err.message);
@@ -255,7 +167,13 @@ export function MembersTab() {
                   </span>
                 </td>
                 <td>
-                  <AccessCell member={m} onGenerate={generateAccess} />
+                  <AccessCell
+                    hasEmail={!!m.email}
+                    hasLogin={m.has_login}
+                    mustChangePassword={m.must_change_password}
+                    tempPassword={m.temp_password}
+                    onGenerate={() => generateAccess(m)}
+                  />
                 </td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button className="btn-link-gray" style={{ color: 'var(--gray)', marginRight: 14 }} onClick={() => toggle(m)}>
@@ -277,7 +195,7 @@ export function MembersTab() {
             setModal(null);
             reload();
             if (result?.tempPassword) {
-              setCredentials({ email: result.email, tempPassword: result.tempPassword });
+              setCredentials({ recipient: result.email, tempPassword: result.tempPassword });
             } else if (result?.accessError) {
               setAccessError(`Membre créé, mais accès non créé : ${result.accessError}`);
             }
@@ -286,7 +204,7 @@ export function MembersTab() {
       )}
       {credentials && (
         <CredentialsModal
-          email={credentials.email}
+          recipient={credentials.recipient}
           tempPassword={credentials.tempPassword}
           onClose={() => setCredentials(null)}
         />

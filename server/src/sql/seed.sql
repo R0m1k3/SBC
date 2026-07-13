@@ -62,6 +62,6 @@ INSERT INTO users (email, password_hash, role, member_id)
 SELECT email, '*seed*', 'member', id FROM members WHERE email IS NOT NULL
 ON CONFLICT (email) DO NOTHING;
 
-INSERT INTO users (email, password_hash, role) VALUES
-  ('admin@sluc-businessclub.fr', '*seed*', 'admin')
+INSERT INTO users (email, password_hash, role, full_name) VALUES
+  ('admin@sluc-businessclub.fr', '*seed*', 'admin', 'Administrateur')
 ON CONFLICT (email) DO NOTHING;

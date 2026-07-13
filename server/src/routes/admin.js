@@ -8,14 +8,22 @@ import {
   inscriptionAdminSchema,
   categorySchema,
   contentSchema,
+  staffUserSchema,
+  roleChangeSchema,
   idParam,
 } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
-import { ensureMemberAccess, AccessError } from '../memberAccess.js';
+import { ensureMemberAccess } from '../memberAccess.js';
+import { createStaffUser, resetStaffAccess } from '../userAccess.js';
+import { AccessError } from '../errors.js';
 
 export const adminRouter = Router();
 
-adminRouter.use(requireAuth('admin'));
+// Every route below requires at least an authenticated staff session
+// (admin or moderator); individual routes further restrict to admin-only
+// where noted.
+adminRouter.use(requireAuth(['admin', 'moderator']));
+const adminOnly = requireAuth('admin');
 
 const MEMBER_SQL = `
   SELECT m.id, m.nom, m.secteur, m.categorie_id, c.name AS categorie, m.dirigeant,
@@ -38,8 +46,8 @@ const INSCR_SQL = `
          i.rencontre_id, r.titre AS rencontre
     FROM inscriptions i JOIN rencontres r ON r.id = i.rencontre_id`;
 
-// ---------- Dashboard ----------
-adminRouter.get('/dashboard', async (_req, res, next) => {
+// ---------- Dashboard (admin only) ----------
+adminRouter.get('/dashboard', adminOnly, async (_req, res, next) => {
   try {
     const [kpis, latest, upcoming] = await Promise.all([
       query(`
@@ -60,7 +68,7 @@ adminRouter.get('/dashboard', async (_req, res, next) => {
   }
 });
 
-// ---------- Members ----------
+// ---------- Members (admin + moderator) ----------
 adminRouter.get('/members', async (_req, res, next) => {
   try {
     const result = await query(`${MEMBER_SQL} ORDER BY m.nom`);
@@ -145,7 +153,7 @@ adminRouter.post('/members/:id/reset-access', validate(idParam, 'params'), async
   }
 });
 
-// ---------- Rencontres ----------
+// ---------- Rencontres (admin + moderator) ----------
 adminRouter.get('/rencontres', async (_req, res, next) => {
   try {
     const result = await query(`${RENC_SQL} GROUP BY r.id ORDER BY r.date_renc`);
@@ -202,7 +210,7 @@ adminRouter.get('/rencontres/:id/inscriptions', validate(idParam, 'params'), asy
   }
 });
 
-// ---------- Inscriptions ----------
+// ---------- Inscriptions (admin + moderator) ----------
 adminRouter.get('/inscriptions', async (_req, res, next) => {
   try {
     const result = await query(`${INSCR_SQL} ORDER BY i.created_at DESC, i.id DESC`);
@@ -250,6 +258,9 @@ adminRouter.delete('/inscriptions/:id', validate(idParam, 'params'), async (req,
 });
 
 // ---------- Categories ----------
+// Read access is shared with moderators: the member form's category
+// dropdown needs it. Managing categories (create/rename/delete) stays
+// admin-only.
 adminRouter.get('/categories', async (_req, res, next) => {
   try {
     const result = await query(`
@@ -262,7 +273,7 @@ adminRouter.get('/categories', async (_req, res, next) => {
   }
 });
 
-adminRouter.post('/categories', validate(categorySchema), async (req, res, next) => {
+adminRouter.post('/categories', adminOnly, validate(categorySchema), async (req, res, next) => {
   try {
     const result = await query(
       'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING id',
@@ -275,7 +286,7 @@ adminRouter.post('/categories', validate(categorySchema), async (req, res, next)
   }
 });
 
-adminRouter.put('/categories/:id', validate(idParam, 'params'), validate(categorySchema), async (req, res, next) => {
+adminRouter.put('/categories/:id', adminOnly, validate(idParam, 'params'), validate(categorySchema), async (req, res, next) => {
   try {
     const result = await query('UPDATE categories SET name = $1 WHERE id = $2 RETURNING id', [
       req.data.name,
@@ -289,7 +300,7 @@ adminRouter.put('/categories/:id', validate(idParam, 'params'), validate(categor
   }
 });
 
-adminRouter.delete('/categories/:id', validate(idParam, 'params'), async (req, res, next) => {
+adminRouter.delete('/categories/:id', adminOnly, validate(idParam, 'params'), async (req, res, next) => {
   try {
     // members.categorie_id has ON DELETE SET NULL: they become "Non classée"
     await query('DELETE FROM categories WHERE id = $1', [req.params.id]);
@@ -299,8 +310,8 @@ adminRouter.delete('/categories/:id', validate(idParam, 'params'), async (req, r
   }
 });
 
-// ---------- Site content ----------
-adminRouter.put('/content', validate(contentSchema), async (req, res, next) => {
+// ---------- Site content (admin only) ----------
+adminRouter.put('/content', adminOnly, validate(contentSchema), async (req, res, next) => {
   try {
     const entries = Object.entries(req.data).filter(([, v]) => v !== undefined);
     for (const [key, value] of entries) {
@@ -316,7 +327,7 @@ adminRouter.put('/content', validate(contentSchema), async (req, res, next) => {
   }
 });
 
-adminRouter.post('/content/hero-photo', (req, res, next) => {
+adminRouter.post('/content/hero-photo', adminOnly, (req, res, next) => {
   imageUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: 'Fichier invalide (2 Mo max).' });
     try {
@@ -337,11 +348,87 @@ adminRouter.post('/content/hero-photo', (req, res, next) => {
   });
 });
 
-// ---------- Demandes d'adhésion ----------
-adminRouter.get('/demandes', async (_req, res, next) => {
+// ---------- Demandes d'adhésion (admin only) ----------
+adminRouter.get('/demandes', adminOnly, async (_req, res, next) => {
   try {
     const result = await query('SELECT * FROM demandes_adhesion ORDER BY created_at DESC');
     res.json({ demandes: result.rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- Admin & moderator accounts (admin only) ----------
+adminRouter.get('/users', adminOnly, async (req, res, next) => {
+  try {
+    const result = await query(`
+      SELECT id, email, full_name, role, must_change_password,
+             CASE WHEN must_change_password THEN temp_password ELSE NULL END AS temp_password,
+             created_at
+        FROM users WHERE role IN ('admin', 'moderator')
+       ORDER BY role, full_name, email`);
+    res.json({ users: result.rows.map((u) => ({ ...u, is_self: u.id === req.user.sub })) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.post('/users', adminOnly, validate(staffUserSchema), async (req, res, next) => {
+  try {
+    const { fullName, email, role } = req.data;
+    const { id, tempPassword } = await createStaffUser({ fullName, email, role });
+    res.status(201).json({ id, tempPassword });
+  } catch (err) {
+    if (err instanceof AccessError) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+});
+
+adminRouter.post('/users/:id/reset-access', adminOnly, validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    const tempPassword = await resetStaffAccess(req.params.id);
+    res.json({ tempPassword });
+  } catch (err) {
+    if (err instanceof AccessError) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+});
+
+adminRouter.put('/users/:id/role', adminOnly, validate(idParam, 'params'), validate(roleChangeSchema), async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.sub) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle.' });
+    }
+    const target = await query(`SELECT role FROM users WHERE id = $1 AND role IN ('admin', 'moderator')`, [req.params.id]);
+    if (target.rowCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
+    if (target.rows[0].role === 'admin' && req.data.role !== 'admin') {
+      const adminCount = await query(`SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin'`);
+      if (adminCount.rows[0].n <= 1) {
+        return res.status(400).json({ error: 'Impossible : il doit rester au moins un administrateur.' });
+      }
+    }
+    await query('UPDATE users SET role = $1 WHERE id = $2', [req.data.role, req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.delete('/users/:id', adminOnly, validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.sub) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte.' });
+    }
+    const target = await query(`SELECT role FROM users WHERE id = $1 AND role IN ('admin', 'moderator')`, [req.params.id]);
+    if (target.rowCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
+    if (target.rows[0].role === 'admin') {
+      const adminCount = await query(`SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin'`);
+      if (adminCount.rows[0].n <= 1) {
+        return res.status(400).json({ error: 'Impossible de supprimer le dernier compte administrateur.' });
+      }
+    }
+    await query(`DELETE FROM users WHERE id = $1 AND role IN ('admin', 'moderator')`, [req.params.id]);
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }

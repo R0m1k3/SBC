@@ -1,13 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { query } from './db.js';
 import { generateTempPassword } from './passwords.js';
-
-export class AccessError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
+import { AccessError } from './errors.js';
 
 // Creates the member's login if it doesn't exist yet, or resets it if it
 // does — same operation either way, used for "create member" and for

@@ -332,15 +332,15 @@ function Portal() {
   );
 }
 
-// Single login entry point for both members and admins. Once authenticated,
-// the content shown depends on the account's role — the URL and the login
-// form never differ.
+// Single login entry point for members, admins and moderators. Once
+// authenticated, the content shown depends on the account's role — the
+// URL and the login form never differ.
 export default function Espace() {
   const { user, loading } = useAuth();
 
   if (loading) return <main style={{ minHeight: '60vh' }} />;
   if (!user) return <main><LoginSection /></main>;
   if (user.mustChangePassword) return <main><ForcedPasswordChange /></main>;
-  if (user.role === 'admin') return <AdminShell />;
+  if (user.role === 'admin' || user.role === 'moderator') return <AdminShell />;
   return <main><Portal /></main>;
 }

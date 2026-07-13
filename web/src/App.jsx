@@ -12,12 +12,15 @@ import { useAuth } from './lib/AuthContext.jsx';
 export default function App() {
   const location = useLocation();
   const { user } = useAuth();
-  // The admin backend (shown inside /espace-membre once an admin logs in)
-  // uses its own full-height sidebar layout, without the public header/footer.
-  // A forced password change is still shown inside the normal site layout.
+  // The admin backend (shown inside /espace-membre once an admin or
+  // moderator logs in) uses its own full-height sidebar layout, without the
+  // public header/footer. A forced password change is still shown inside
+  // the normal site layout.
   const isAdminBackend =
     location.pathname.startsWith('/admin') ||
-    (location.pathname === '/espace-membre' && user?.role === 'admin' && !user?.mustChangePassword);
+    (location.pathname === '/espace-membre' &&
+      (user?.role === 'admin' || user?.role === 'moderator') &&
+      !user?.mustChangePassword);
 
   useEffect(() => {
     window.scrollTo(0, 0);

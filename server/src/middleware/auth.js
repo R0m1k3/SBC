@@ -31,10 +31,13 @@ export function attachUser(req, _res, next) {
   next();
 }
 
-export function requireAuth(role) {
+// `roles` may be a single role string, an array of allowed roles, or
+// omitted to just require any authenticated session.
+export function requireAuth(roles) {
+  const allowed = roles ? (Array.isArray(roles) ? roles : [roles]) : null;
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Authentification requise' });
-    if (role && req.user.role !== role) return res.status(403).json({ error: 'Accès refusé' });
+    if (allowed && !allowed.includes(req.user.role)) return res.status(403).json({ error: 'Accès refusé' });
     next();
   };
 }

@@ -68,6 +68,16 @@ export const inscriptionAdminSchema = z.object({
 
 export const categorySchema = z.object({ name: trimmed(80, 1) });
 
+export const staffRoleEnum = z.enum(['admin', 'moderator']);
+
+export const staffUserSchema = z.object({
+  fullName: trimmed(120, 1),
+  email: trimmed(254, 3).email(),
+  role: staffRoleEnum,
+});
+
+export const roleChangeSchema = z.object({ role: staffRoleEnum });
+
 export const contentSchema = z.object({
   hero_quote_text: trimmed(300).optional(),
   hero_quote_author: trimmed(120).optional(),

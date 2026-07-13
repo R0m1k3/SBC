@@ -75,6 +75,9 @@ s'ils n'en ont pas déjà un :
 | Admin | `admin@sluc-businessclub.fr` | `ADMIN_INITIAL_PASSWORD` (défaut : `SlucAdmin2026!`) |
 | Membre (×12) | email de contact de chaque entreprise de démo, ex. `contact@lorraine-assurances.fr` | `MEMBER_INITIAL_PASSWORD` (défaut : `SlucMembre2026!`) |
 
+D'autres comptes administrateur ou modérateur se créent depuis le back-office
+(onglet « Administrateurs », réservé aux admins) — voir ci-dessous.
+
 Changez le mot de passe admin après la première connexion (Espace membre/admin →
 formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
@@ -106,7 +109,19 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
   des octets magiques côté serveur).
 - Bannière d'état d'adhésion (validée / à renouveler) et changement de mot de passe.
 
+**Rôles du back-office**
+- **Administrateur** : accès complet — tableau de bord, membres, rencontres, inscriptions,
+  catégories, contenu du site, et gestion des comptes administrateurs/modérateurs.
+- **Modérateur** : accès restreint aux membres, aux rencontres et aux inscriptions
+  (opérations du quotidien) ; pas de tableau de bord, pas de catégories, pas de contenu
+  du site, pas de gestion des comptes. Un modérateur peut être promu administrateur (et
+  inversement) depuis l'onglet « Administrateurs ». Le système empêche de se supprimer
+  ou de se rétrograder soi-même, et de supprimer le dernier compte administrateur restant.
+
 **Espace admin** (rôle `admin`)
+- Administrateurs : création de comptes administrateur ou modérateur (mot de passe
+  temporaire généré, changement obligatoire à la première connexion — même mécanique
+  que pour les membres), réinitialisation d'accès, promotion/rétrogradation, suppression.
 - Tableau de bord : indicateurs temps réel, dernières inscriptions, prochaines rencontres.
 - Membres : création, édition, validation/suspension par saison (1er sept. → 31 août). La création
   d'un membre avec email génère automatiquement un mot de passe temporaire, affiché à l'admin et
@@ -128,8 +143,11 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
   derrière HTTPS).
 - **CSRF** : cookie SameSite=Strict + vérification de l'en-tête `Origin` sur toutes
   les mutations.
-- **Autorisation** : middleware de rôles (`member` / `admin`) sur chaque route protégée ;
-  un membre ne peut modifier que sa propre fiche.
+- **Autorisation** : middleware de rôles (`member` / `moderator` / `admin`) sur chaque
+  route protégée ; un membre ne peut modifier que sa propre fiche ; les routes
+  administratives sensibles (catégories en écriture, contenu du site, demandes
+  d'adhésion, gestion des comptes) restent strictement admin-only même si un
+  modérateur est authentifié.
 - **Validation** : schémas `zod` sur toutes les entrées (types, longueurs, formats),
   contraintes `CHECK` en base en seconde ligne.
 - **Rate limiting** : global (300/min), connexion (10 / 15 min), formulaires publics
