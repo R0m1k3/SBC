@@ -11,6 +11,7 @@ import {
   idParam,
 } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
+import { ensureMemberAccess, AccessError } from '../memberAccess.js';
 
 export const adminRouter = Router();
 
@@ -19,8 +20,13 @@ adminRouter.use(requireAuth('admin'));
 const MEMBER_SQL = `
   SELECT m.id, m.nom, m.secteur, m.categorie_id, c.name AS categorie, m.dirigeant,
          m.adhesion, m.email, m.tel, m.site, m.presentation, m.valide,
-         m.logo_path, m.photo_path
-    FROM members m LEFT JOIN categories c ON c.id = m.categorie_id`;
+         m.logo_path, m.photo_path,
+         (u.id IS NOT NULL) AS has_login,
+         COALESCE(u.must_change_password, false) AS must_change_password,
+         CASE WHEN u.must_change_password THEN u.temp_password ELSE NULL END AS temp_password
+    FROM members m
+    LEFT JOIN categories c ON c.id = m.categorie_id
+    LEFT JOIN users u ON u.member_id = m.id`;
 
 const RENC_SQL = `
   SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places,
@@ -73,7 +79,22 @@ adminRouter.post('/members', validate(adminMemberSchema), async (req, res, next)
       [d.nom, d.secteur, d.categorie_id ?? null, d.dirigeant, new Date().getFullYear(),
        d.email || null, d.tel, d.site, d.presentation, d.valide ?? true]
     );
-    res.status(201).json({ id: result.rows[0].id });
+    const id = result.rows[0].id;
+    // A login account (with a temporary password) is only created when an
+    // email is provided — it's the login identifier.
+    let tempPassword = null;
+    let accessError = null;
+    if (d.email) {
+      try {
+        tempPassword = await ensureMemberAccess(id, d.email);
+      } catch (err) {
+        if (!(err instanceof AccessError)) throw err;
+        // Member created, but the email already belongs to another login —
+        // surface it without failing the whole creation.
+        accessError = err.message;
+      }
+    }
+    res.status(201).json({ id, tempPassword, accessError });
   } catch (err) {
     next(err);
   }
@@ -105,6 +126,21 @@ adminRouter.post('/members/:id/toggle-valide', validate(idParam, 'params'), asyn
     if (result.rowCount === 0) return res.status(404).json({ error: 'Membre introuvable' });
     res.json({ valide: result.rows[0].valide });
   } catch (err) {
+    next(err);
+  }
+});
+
+// Creates the member's login if it doesn't have one yet, or resets its
+// password (e.g. the member lost it) — either way returns a fresh
+// temporary password that must be changed at next login.
+adminRouter.post('/members/:id/reset-access', validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    const member = await query('SELECT email FROM members WHERE id = $1', [req.params.id]);
+    if (member.rowCount === 0) return res.status(404).json({ error: 'Membre introuvable' });
+    const tempPassword = await ensureMemberAccess(req.params.id, member.rows[0].email);
+    res.json({ tempPassword });
+  } catch (err) {
+    if (err instanceof AccessError) return res.status(err.status).json({ error: err.message });
     next(err);
   }
 });

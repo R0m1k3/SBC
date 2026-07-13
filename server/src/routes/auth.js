@@ -8,13 +8,19 @@ import { loginSchema, changePasswordSchema } from '../schemas.js';
 
 export const authRouter = Router();
 
-const publicUser = (u) => ({ id: u.id, email: u.email, role: u.role, memberId: u.member_id });
+const publicUser = (u) => ({
+  id: u.id,
+  email: u.email,
+  role: u.role,
+  memberId: u.member_id,
+  mustChangePassword: u.must_change_password,
+});
 
 authRouter.post('/login', loginLimiter, validate(loginSchema), async (req, res, next) => {
   try {
     const { email, password } = req.data;
     const result = await query(
-      'SELECT id, email, password_hash, role, member_id FROM users WHERE email = $1',
+      'SELECT id, email, password_hash, role, member_id, must_change_password FROM users WHERE email = $1',
       [email]
     );
     // Always run a bcrypt comparison to keep timing uniform
@@ -40,7 +46,7 @@ authRouter.get('/me', async (req, res, next) => {
   try {
     if (!req.user) return res.json({ user: null });
     const result = await query(
-      'SELECT id, email, role, member_id FROM users WHERE id = $1',
+      'SELECT id, email, role, member_id, must_change_password FROM users WHERE id = $1',
       [req.user.sub]
     );
     if (result.rowCount === 0) return res.json({ user: null });
@@ -62,7 +68,14 @@ authRouter.post(
       const ok = await bcrypt.compare(currentPassword, result.rows[0].password_hash);
       if (!ok) return res.status(401).json({ error: 'Mot de passe actuel incorrect.' });
       const hash = await bcrypt.hash(newPassword, 12);
-      await query('UPDATE users SET password_hash = $1 WHERE id = $2', [hash, req.user.sub]);
+      // Changing the password (self-service or forced first login) always
+      // clears the temp password shown to the admin and lifts the forced-
+      // change requirement.
+      await query(
+        `UPDATE users SET password_hash = $1, temp_password = NULL, must_change_password = false
+          WHERE id = $2`,
+        [hash, req.user.sub]
+      );
       res.json({ ok: true });
     } catch (err) {
       next(err);

@@ -78,6 +78,18 @@ s'ils n'en ont pas déjà un :
 Changez le mot de passe admin après la première connexion (Espace membre/admin →
 formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
+### Mots de passe temporaires
+
+Quand un admin crée un nouveau membre (avec email) ou réinitialise son accès, un mot de
+passe temporaire aléatoire (~69 bits d'entropie, sans caractères ambigus) est généré et
+haché avec bcrypt comme n'importe quel mot de passe. Une copie en clair est conservée
+en base (colonne `users.temp_password`) **uniquement le temps que le membre ne l'ait pas
+changé** — elle est automatiquement effacée dès son premier changement de mot de passe
+(forcé ou volontaire), et n'est jamais exposée par une route publique ou membre, seulement
+par les routes admin (`GET /api/admin/members`, `POST /api/admin/members`,
+`POST /api/admin/members/:id/reset-access`). À la connexion avec un mot de passe temporaire,
+l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéder à son espace.
+
 ## Fonctionnalités
 
 **Site public**
@@ -96,7 +108,10 @@ formulaire « Mot de passe », endpoint `POST /api/auth/change-password`).
 
 **Espace admin** (rôle `admin`)
 - Tableau de bord : indicateurs temps réel, dernières inscriptions, prochaines rencontres.
-- Membres : création, édition, validation/suspension par saison (1er sept. → 31 août).
+- Membres : création, édition, validation/suspension par saison (1er sept. → 31 août). La création
+  d'un membre avec email génère automatiquement un mot de passe temporaire, affiché à l'admin et
+  copiable ; il reste visible dans la liste tant que le membre ne l'a pas changé. L'admin peut aussi
+  réinitialiser l'accès à tout moment (membre ayant perdu son mot de passe).
 - Rencontres : création, édition, suppression ; liste des inscrits avec impression
   et export Excel.
 - Inscriptions : modification, confirmation, annulation avec confirmation.

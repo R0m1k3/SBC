@@ -25,13 +25,22 @@ CREATE TABLE IF NOT EXISTS members (
 );
 
 CREATE TABLE IF NOT EXISTS users (
-    id            SERIAL PRIMARY KEY,
-    email         CITEXT NOT NULL UNIQUE CHECK (char_length(email) <= 254),
-    password_hash TEXT NOT NULL,
-    role          TEXT NOT NULL CHECK (role IN ('member', 'admin')),
-    member_id     INTEGER UNIQUE REFERENCES members(id) ON DELETE CASCADE,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                   SERIAL PRIMARY KEY,
+    email                CITEXT NOT NULL UNIQUE CHECK (char_length(email) <= 254),
+    password_hash        TEXT NOT NULL,
+    role                 TEXT NOT NULL CHECK (role IN ('member', 'admin')),
+    member_id            INTEGER UNIQUE REFERENCES members(id) ON DELETE CASCADE,
+    -- Temporary password shown to the admin (create / reset access), kept
+    -- readable only until the user changes it — cleared automatically at
+    -- that point. NULL once a real password has been chosen by the user.
+    temp_password        TEXT,
+    must_change_password BOOLEAN NOT NULL DEFAULT false,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- ALTER ... IF NOT EXISTS heals databases that already had this table
+-- before these columns were introduced.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS temp_password TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS rencontres (
     id          SERIAL PRIMARY KEY,

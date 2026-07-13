@@ -14,9 +14,10 @@ export default function App() {
   const { user } = useAuth();
   // The admin backend (shown inside /espace-membre once an admin logs in)
   // uses its own full-height sidebar layout, without the public header/footer.
+  // A forced password change is still shown inside the normal site layout.
   const isAdminBackend =
     location.pathname.startsWith('/admin') ||
-    (location.pathname === '/espace-membre' && user?.role === 'admin');
+    (location.pathname === '/espace-membre' && user?.role === 'admin' && !user?.mustChangePassword);
 
   useEffect(() => {
     window.scrollTo(0, 0);

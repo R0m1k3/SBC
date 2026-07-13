@@ -26,9 +26,13 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
       site: form.site, presentation: form.presentation,
     };
     try {
-      if (member) await api.put(`/api/admin/members/${member.id}`, body);
-      else await api.post('/api/admin/members', body);
-      onSaved();
+      if (member) {
+        await api.put(`/api/admin/members/${member.id}`, body);
+        onSaved();
+      } else {
+        const result = await api.post('/api/admin/members', body);
+        onSaved({ ...result, email: body.email });
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -84,10 +88,101 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
   );
 }
 
+// Shows a just-generated temporary password so the admin can relay it to
+// the member (copy button). It also stays readable in the members table
+// below until the member changes it.
+function CredentialsModal({ email, tempPassword, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(tempPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable (non-HTTPS, older browser) — password stays selectable */
+    }
+  };
+  return (
+    <Modal onClose={onClose} maxWidth={440} header={{ kicker: 'Accès membre', title: 'Mot de passe temporaire généré' }}>
+      <div style={{ padding: '26px 30px' }}>
+        <p style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 18 }}>
+          Communiquez ces identifiants à <strong>{email}</strong>. Ce mot de passe devra être
+          changé dès la première connexion.
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--admin-bg)', borderRadius: 6, padding: '14px 16px' }}>
+          <code style={{ fontSize: 18, fontWeight: 700, letterSpacing: '.02em', flex: 1, userSelect: 'all' }}>{tempPassword}</code>
+          <button type="button" className="btn btn-outline-soft btn-sm" style={{ fontSize: 13, padding: '8px 14px' }} onClick={copy}>
+            {copied ? '✓ Copié' : 'Copier'}
+          </button>
+        </div>
+        <p style={{ fontSize: 12.5, color: 'var(--gray-light)', lineHeight: 1.55, marginTop: 12 }}>
+          Ce mot de passe reste visible dans la liste des membres tant qu'il n'a pas été changé.
+        </p>
+        <button type="button" className="btn btn-dark btn-sm" style={{ width: '100%', marginTop: 20, fontSize: 14 }} onClick={onClose}>
+          Fermer
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function AccessCell({ member, onGenerate }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  if (!member.email) {
+    return (
+      <span style={{ fontSize: 12.5, color: 'var(--gray-light)' }} title="Ajoutez un email pour créer un accès">
+        —
+      </span>
+    );
+  }
+  if (!member.has_login) {
+    return (
+      <button type="button" className="btn-link" style={{ fontSize: 12.5 }} onClick={() => onGenerate(member)}>
+        Créer l'accès
+      </button>
+    );
+  }
+  if (member.must_change_password && member.temp_password) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <code style={{ fontSize: 12, background: 'var(--admin-bg)', padding: '4px 8px', borderRadius: 3, fontWeight: 600 }}>
+          {member.temp_password}
+        </code>
+        <button type="button" className="btn-link-gray" style={{ fontSize: 11.5 }} onClick={() => copy(member.temp_password)}>
+          {copied ? '✓' : 'copier'}
+        </button>
+        <button type="button" className="btn-link-gray" style={{ fontSize: 11.5 }} onClick={() => onGenerate(member)}>
+          réinitialiser
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span className="badge badge-green">Défini</span>
+      <button type="button" className="btn-link-gray" style={{ fontSize: 11.5 }} onClick={() => onGenerate(member)}>
+        réinitialiser
+      </button>
+    </div>
+  );
+}
+
 export function MembersTab() {
   const [members, setMembers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [modal, setModal] = useState(null); // null | 'new' | member
+  const [credentials, setCredentials] = useState(null); // { email, tempPassword }
+  const [accessError, setAccessError] = useState('');
   const season = seasonLabel();
 
   const reload = () =>
@@ -105,6 +200,17 @@ export function MembersTab() {
   const toggle = async (m) => {
     await api.post(`/api/admin/members/${m.id}/toggle-valide`);
     reload();
+  };
+
+  const generateAccess = async (m) => {
+    setAccessError('');
+    try {
+      const d = await api.post(`/api/admin/members/${m.id}/reset-access`);
+      setCredentials({ email: m.email, tempPassword: d.tempPassword });
+      reload();
+    } catch (err) {
+      setAccessError(err.message);
+    }
   };
 
   const actifs = members.filter((m) => m.valide).length;
@@ -129,11 +235,12 @@ export function MembersTab() {
           être inscrit aux rencontres. La saison court du 1<sup>er</sup> septembre au 31 août.
         </span>
       </div>
+      {accessError && <p className="error-text" style={{ padding: '12px 24px 0' }}>{accessError}</p>}
       <div style={{ overflowX: 'auto' }}>
         <table className="table">
           <thead>
             <tr>
-              <th>Entreprise</th><th>Secteur</th><th>Dirigeant</th><th>Saison</th><th></th>
+              <th>Entreprise</th><th>Secteur</th><th>Dirigeant</th><th>Saison</th><th>Accès</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -146,6 +253,9 @@ export function MembersTab() {
                   <span className={`badge ${m.valide ? 'badge-green' : 'badge-red'}`}>
                     {m.valide ? `Validé ${season}` : 'Non validé'}
                   </span>
+                </td>
+                <td>
+                  <AccessCell member={m} onGenerate={generateAccess} />
                 </td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button className="btn-link-gray" style={{ color: 'var(--gray)', marginRight: 14 }} onClick={() => toggle(m)}>
@@ -163,7 +273,22 @@ export function MembersTab() {
           member={modal === 'new' ? null : modal}
           categories={categories}
           onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); reload(); }}
+          onSaved={(result) => {
+            setModal(null);
+            reload();
+            if (result?.tempPassword) {
+              setCredentials({ email: result.email, tempPassword: result.tempPassword });
+            } else if (result?.accessError) {
+              setAccessError(`Membre créé, mais accès non créé : ${result.accessError}`);
+            }
+          }}
+        />
+      )}
+      {credentials && (
+        <CredentialsModal
+          email={credentials.email}
+          tempPassword={credentials.tempPassword}
+          onClose={() => setCredentials(null)}
         />
       )}
     </div>

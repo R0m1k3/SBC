@@ -88,6 +88,71 @@ function PasswordCard() {
   );
 }
 
+// Blocking gate shown right after login when the account still carries a
+// temporary password (new member, or an admin reset). The temporary
+// password itself doubles as "mot de passe actuel" here.
+function ForcedPasswordChange() {
+  const { logout, refreshUser } = useAuth();
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '' });
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (form.newPassword !== confirm) {
+      setError('Les deux mots de passe ne correspondent pas.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.post('/api/auth/change-password', form);
+      await refreshUser();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section style={{ minHeight: 'calc(100vh - 76px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', background: 'var(--dark)' }}>
+      <div style={{ width: '100%', maxWidth: 440 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div className="kicker on-dark" style={{ marginBottom: 14 }}>Première connexion</div>
+          <h1 className="serif" style={{ fontWeight: 500, fontSize: 30, color: '#fff', lineHeight: 1.25 }}>
+            Choisissez votre mot de passe
+          </h1>
+          <p style={{ fontSize: 14, color: '#B7AFA6', marginTop: 12, lineHeight: 1.6 }}>
+            Votre mot de passe temporaire doit être remplacé avant de continuer.
+          </p>
+        </div>
+        <form onSubmit={submit} style={{ background: '#fff', borderRadius: 8, padding: '32px 30px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <label className="field">Mot de passe temporaire
+              <input type="password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} required autoComplete="current-password" />
+            </label>
+            <label className="field">Nouveau mot de passe
+              <input type="password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} required minLength={10} autoComplete="new-password" />
+            </label>
+            <label className="field">Confirmer le nouveau mot de passe
+              <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={10} autoComplete="new-password" />
+            </label>
+          </div>
+          {error && <p className="error-text" style={{ marginTop: 14 }}>{error}</p>}
+          <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 22, padding: 14, borderRadius: 3 }} disabled={busy}>
+            {busy ? 'Enregistrement…' : 'Valider mon mot de passe'}
+          </button>
+          <button type="button" onClick={logout} className="btn-link-gray" style={{ width: '100%', textAlign: 'center', marginTop: 14 }}>
+            Se déconnecter
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
 function Portal() {
   const { logout } = useAuth();
   const [member, setMember] = useState(null);
@@ -275,6 +340,7 @@ export default function Espace() {
 
   if (loading) return <main style={{ minHeight: '60vh' }} />;
   if (!user) return <main><LoginSection /></main>;
+  if (user.mustChangePassword) return <main><ForcedPasswordChange /></main>;
   if (user.role === 'admin') return <AdminShell />;
   return <main><Portal /></main>;
 }

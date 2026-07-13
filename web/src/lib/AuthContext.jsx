@@ -29,8 +29,16 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Re-fetches the current user — used after a forced password change so
+  // mustChangePassword flips to false without a full re-login.
+  const refreshUser = async () => {
+    const d = await api.get('/api/auth/me');
+    setUser(d.user);
+    return d.user;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
