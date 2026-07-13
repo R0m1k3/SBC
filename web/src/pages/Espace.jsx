@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/AuthContext.jsx';
 import { api, seasonLabel } from '../lib/api.js';
 import ImageSlot from '../components/ImageSlot.jsx';
+import { AdminShell } from './Admin.jsx';
 
 function LoginSection({ title = 'Gérez votre présence au Club', kicker = 'Espace membre' }) {
   const { login } = useAuth();
@@ -266,12 +267,14 @@ function Portal() {
   );
 }
 
+// Single login entry point for both members and admins. Once authenticated,
+// the content shown depends on the account's role — the URL and the login
+// form never differ.
 export default function Espace() {
   const { user, loading } = useAuth();
 
   if (loading) return <main style={{ minHeight: '60vh' }} />;
-  if (!user || user.role !== 'member') return <main><LoginSection /></main>;
+  if (!user) return <main><LoginSection /></main>;
+  if (user.role === 'admin') return <AdminShell />;
   return <main><Portal /></main>;
 }
-
-export { LoginSection };

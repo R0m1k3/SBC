@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts, statutLabel } from '../lib/api.js';
-import { LoginSection } from './Espace.jsx';
 import { MembersTab, RencontresTab, InscriptionsTab } from '../components/admin/AdminTabs.jsx';
 import { CategoriesTab, ContenuTab } from '../components/admin/AdminContent.jsx';
 
@@ -86,18 +85,12 @@ function Dashboard() {
   );
 }
 
-export default function Admin() {
-  const { user, loading, logout } = useAuth();
+// Rendered inside /espace-membre once a logged-in user is confirmed as
+// admin (see Espace.jsx). Assumes an authenticated admin user — no auth
+// gate here, the caller already checked it.
+export function AdminShell() {
+  const { user, logout } = useAuth();
   const [tab, setTab] = useState('dashboard');
-
-  if (loading) return <main style={{ minHeight: '60vh' }} />;
-  if (!user || user.role !== 'admin') {
-    return (
-      <main>
-        <LoginSection kicker="Espace admin" title="Administration du Business Club" />
-      </main>
-    );
-  }
 
   const current = TABS.find((t) => t.key === tab);
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -149,4 +142,9 @@ export default function Admin() {
       </div>
     </div>
   );
+}
+
+// Legacy /admin bookmarks: everyone now logs in from a single entry point.
+export default function Admin() {
+  return <Navigate to="/espace-membre" replace />;
 }

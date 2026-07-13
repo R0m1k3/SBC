@@ -7,10 +7,16 @@ import Annuaire from './pages/Annuaire.jsx';
 import Association from './pages/Association.jsx';
 import Espace from './pages/Espace.jsx';
 import Admin from './pages/Admin.jsx';
+import { useAuth } from './lib/AuthContext.jsx';
 
 export default function App() {
   const location = useLocation();
-  const isAdmin = location.pathname.startsWith('/admin');
+  const { user } = useAuth();
+  // The admin backend (shown inside /espace-membre once an admin logs in)
+  // uses its own full-height sidebar layout, without the public header/footer.
+  const isAdminBackend =
+    location.pathname.startsWith('/admin') ||
+    (location.pathname === '/espace-membre' && user?.role === 'admin');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -18,7 +24,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {!isAdmin && <Header />}
+      {!isAdminBackend && <Header />}
       <div style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -29,7 +35,7 @@ export default function App() {
           <Route path="*" element={<Home />} />
         </Routes>
       </div>
-      {!isAdmin && <Footer />}
+      {!isAdminBackend && <Footer />}
     </div>
   );
 }

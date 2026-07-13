@@ -29,14 +29,6 @@ export default function Header() {
           <NavLink to="/annuaire" className={navLinkClass}>Annuaire</NavLink>
           <NavLink to="/association" className={navLinkClass}>L'association</NavLink>
           <NavLink to="/espace-membre" className={navLinkClass}>Espace membre</NavLink>
-          <NavLink
-            to="/admin"
-            style={{ fontSize: 13, color: 'var(--gray-light)', display: 'flex', alignItems: 'center', gap: 6 }}
-            className="nav-btn"
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)', display: 'inline-block' }} />
-            Espace admin
-          </NavLink>
           <Link to="/" style={{ marginLeft: 10, textDecoration: 'none' }}>
             <button className="btn btn-red" style={{ padding: '12px 22px', fontSize: 14 }}>Devenir membre</button>
           </Link>
