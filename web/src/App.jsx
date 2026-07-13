@@ -5,6 +5,7 @@ import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import Annuaire from './pages/Annuaire.jsx';
 import Association from './pages/Association.jsx';
+import RencontresPassees from './pages/RencontresPassees.jsx';
 import Espace from './pages/Espace.jsx';
 import Admin from './pages/Admin.jsx';
 import { useAuth } from './lib/AuthContext.jsx';
@@ -33,6 +34,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/annuaire" element={<Annuaire />} />
+          <Route path="/rencontres-passees" element={<RencontresPassees />} />
           <Route path="/association" element={<Association />} />
           <Route path="/espace-membre" element={<Espace />} />
           <Route path="/admin/*" element={<Admin />} />

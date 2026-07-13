@@ -79,9 +79,14 @@ CREATE TABLE IF NOT EXISTS rencontres_passees (
     lieu         TEXT NOT NULL,
     titre        TEXT NOT NULL,
     texte        TEXT NOT NULL,
+    -- Fallback participant count, used only when this event is NOT linked to
+    -- a rencontre. When rencontre_id is set, the count is derived live from
+    -- that rencontre's inscriptions.
     participants INTEGER NOT NULL DEFAULT 0,
+    -- Optional link to the rencontre this event came from (auto stats).
+    rencontre_id INTEGER REFERENCES rencontres(id) ON DELETE SET NULL,
+    -- Legacy inline photo columns, migrated into rencontre_passee_photos below.
     nb_photos    INTEGER NOT NULL DEFAULT 0,
-    -- 1 large + 2 small photos, matching the home page grid.
     image_path   TEXT,
     image_path_2 TEXT,
     image_path_3 TEXT
@@ -89,6 +94,28 @@ CREATE TABLE IF NOT EXISTS rencontres_passees (
 ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS image_path TEXT;
 ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS image_path_2 TEXT;
 ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS image_path_3 TEXT;
+ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS rencontre_id INTEGER REFERENCES rencontres(id) ON DELETE SET NULL;
+
+-- Unlimited photos per past event (gallery / carousel).
+CREATE TABLE IF NOT EXISTS rencontre_passee_photos (
+    id                  SERIAL PRIMARY KEY,
+    rencontre_passee_id INTEGER NOT NULL REFERENCES rencontres_passees(id) ON DELETE CASCADE,
+    image_path          TEXT NOT NULL,
+    position            INTEGER NOT NULL DEFAULT 0,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rpp_event ON rencontre_passee_photos(rencontre_passee_id);
+
+-- One-time migration of the legacy inline image columns into the photos
+-- table. Idempotent: after the UPDATE nulls the columns, it becomes a no-op.
+INSERT INTO rencontre_passee_photos (rencontre_passee_id, image_path, position)
+  SELECT id, image_path, 0 FROM rencontres_passees WHERE image_path IS NOT NULL;
+INSERT INTO rencontre_passee_photos (rencontre_passee_id, image_path, position)
+  SELECT id, image_path_2, 1 FROM rencontres_passees WHERE image_path_2 IS NOT NULL;
+INSERT INTO rencontre_passee_photos (rencontre_passee_id, image_path, position)
+  SELECT id, image_path_3, 2 FROM rencontres_passees WHERE image_path_3 IS NOT NULL;
+UPDATE rencontres_passees SET image_path = NULL, image_path_2 = NULL, image_path_3 = NULL
+  WHERE image_path IS NOT NULL OR image_path_2 IS NOT NULL OR image_path_3 IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS demandes_adhesion (
     id         SERIAL PRIMARY KEY,

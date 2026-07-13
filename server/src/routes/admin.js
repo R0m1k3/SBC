@@ -11,7 +11,7 @@ import {
   staffUserSchema,
   roleChangeSchema,
   rencontrePasseeSchema,
-  pastEventImageParam,
+  pastPhotoParam,
   idParam,
 } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
@@ -237,15 +237,28 @@ adminRouter.get('/rencontres/:id/inscriptions', validate(idParam, 'params'), asy
 });
 
 // ---------- Rencontres passées (admin + moderator manage; admin-only delete) ----------
-// Powers the "Rencontres passées" gallery on the home page.
+// Powers the "Rencontres passées" section on the home page and its dedicated
+// public page. Participant count is derived from the linked rencontre's
+// inscriptions when set, otherwise the manual fallback. Photo count and the
+// photo list come from the rencontre_passee_photos gallery.
 const PAST_SQL = `
-  SELECT id, date_label, lieu, titre, texte, participants, nb_photos,
-         image_path, image_path_2, image_path_3
-    FROM rencontres_passees`;
+  SELECT rp.id, rp.date_label, rp.lieu, rp.titre, rp.texte, rp.participants, rp.rencontre_id,
+         CASE WHEN rp.rencontre_id IS NOT NULL THEN COALESCE(rc.inscrits, 0) ELSE rp.participants END AS participants_display,
+         COALESCE(ph.n, 0) AS nb_photos,
+         COALESCE(ph.photos, '[]'::json) AS photos
+    FROM rencontres_passees rp
+    LEFT JOIN (
+      SELECT rencontre_passee_id, COUNT(*)::int AS n,
+             json_agg(json_build_object('id', id, 'path', image_path) ORDER BY position, id) AS photos
+        FROM rencontre_passee_photos GROUP BY rencontre_passee_id
+    ) ph ON ph.rencontre_passee_id = rp.id
+    LEFT JOIN (
+      SELECT rencontre_id, COUNT(*)::int AS inscrits FROM inscriptions GROUP BY rencontre_id
+    ) rc ON rc.rencontre_id = rp.rencontre_id`;
 
 adminRouter.get('/rencontres-passees', async (_req, res, next) => {
   try {
-    const result = await query(`${PAST_SQL} ORDER BY id DESC`);
+    const result = await query(`${PAST_SQL} ORDER BY rp.id DESC`);
     res.json({ rencontresPassees: result.rows });
   } catch (err) {
     next(err);
@@ -256,9 +269,9 @@ adminRouter.post('/rencontres-passees', validate(rencontrePasseeSchema), async (
   try {
     const d = req.data;
     const result = await query(
-      `INSERT INTO rencontres_passees (date_label, lieu, titre, texte, participants, nb_photos)
+      `INSERT INTO rencontres_passees (date_label, lieu, titre, texte, participants, rencontre_id)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [d.date_label, d.lieu, d.titre, d.texte, d.participants, d.nb_photos]
+      [d.date_label, d.lieu, d.titre, d.texte, d.participants ?? 0, d.rencontre_id ?? null]
     );
     res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
@@ -270,9 +283,9 @@ adminRouter.put('/rencontres-passees/:id', validate(idParam, 'params'), validate
   try {
     const d = req.data;
     const result = await query(
-      `UPDATE rencontres_passees SET date_label=$1, lieu=$2, titre=$3, texte=$4, participants=$5, nb_photos=$6
+      `UPDATE rencontres_passees SET date_label=$1, lieu=$2, titre=$3, texte=$4, participants=$5, rencontre_id=$6
         WHERE id=$7 RETURNING id`,
-      [d.date_label, d.lieu, d.titre, d.texte, d.participants, d.nb_photos, req.params.id]
+      [d.date_label, d.lieu, d.titre, d.texte, d.participants ?? 0, d.rencontre_id ?? null, req.params.id]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'Rencontre passée introuvable' });
     res.json({ ok: true });
@@ -282,42 +295,70 @@ adminRouter.put('/rencontres-passees/:id', validate(idParam, 'params'), validate
 });
 
 // Deleting is admin-only, same reasoning as rencontres/inscriptions above.
+// ON DELETE CASCADE removes the photo rows; we delete their files first.
 adminRouter.delete('/rencontres-passees/:id', adminOnly, validate(idParam, 'params'), async (req, res, next) => {
   try {
-    const result = await query(
-      'DELETE FROM rencontres_passees WHERE id = $1 RETURNING image_path, image_path_2, image_path_3',
-      [req.params.id]
-    );
-    if (result.rowCount > 0) {
-      const row = result.rows[0];
-      await Promise.all([deleteImage(row.image_path), deleteImage(row.image_path_2), deleteImage(row.image_path_3)]);
-    }
+    const photos = await query('SELECT image_path FROM rencontre_passee_photos WHERE rencontre_passee_id = $1', [req.params.id]);
+    await query('DELETE FROM rencontres_passees WHERE id = $1', [req.params.id]);
+    await Promise.all(photos.rows.map((p) => deleteImage(p.image_path)));
     res.json({ ok: true });
   } catch (err) {
     next(err);
   }
 });
 
-// Three photo slots per past event (matches the home page's 1 large + 2
-// small grid). :slot is 1, 2 or 3.
-const PAST_IMAGE_COLUMNS = { 1: 'image_path', 2: 'image_path_2', 3: 'image_path_3' };
-adminRouter.post('/rencontres-passees/:id/image/:slot', validate(pastEventImageParam, 'params'), (req, res, next) => {
+// Add a photo to a past event's gallery (unlimited). Admin + moderator.
+adminRouter.post('/rencontres-passees/:id/photos', validate(idParam, 'params'), (req, res, next) => {
   imageUpload(req, res, async (err) => {
     if (err) return res.status(400).json({ error: 'Fichier invalide (2 Mo max).' });
     try {
       if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu.' });
-      const column = PAST_IMAGE_COLUMNS[req.params.slot];
-      const existing = await query(`SELECT ${column} AS path FROM rencontres_passees WHERE id = $1`, [req.params.id]);
-      if (existing.rowCount === 0) return res.status(404).json({ error: 'Rencontre passée introuvable' });
+      const event = await query('SELECT 1 FROM rencontres_passees WHERE id = $1', [req.params.id]);
+      if (event.rowCount === 0) return res.status(404).json({ error: 'Rencontre passée introuvable' });
       const publicPath = await saveImage(req.file.buffer);
       if (!publicPath) return res.status(400).json({ error: 'Format accepté : JPEG, PNG ou WebP.' });
-      await query(`UPDATE rencontres_passees SET ${column} = $1 WHERE id = $2`, [publicPath, req.params.id]);
-      await deleteImage(existing.rows[0].path);
-      res.json({ path: publicPath });
+      const result = await query(
+        `INSERT INTO rencontre_passee_photos (rencontre_passee_id, image_path, position)
+         VALUES ($1, $2, COALESCE((SELECT MAX(position) + 1 FROM rencontre_passee_photos WHERE rencontre_passee_id = $1), 0))
+         RETURNING id`,
+        [req.params.id, publicPath]
+      );
+      res.status(201).json({ id: result.rows[0].id, path: publicPath });
     } catch (e) {
       next(e);
     }
   });
+});
+
+// Promote a photo to first position (the large one on the home page). Admin + moderator.
+adminRouter.post('/rencontres-passees/:id/photos/:photoId/principale', validate(pastPhotoParam, 'params'), async (req, res, next) => {
+  try {
+    const result = await query(
+      `UPDATE rencontre_passee_photos
+          SET position = COALESCE((SELECT MIN(position) FROM rencontre_passee_photos WHERE rencontre_passee_id = $1), 0) - 1
+        WHERE id = $2 AND rencontre_passee_id = $1 RETURNING id`,
+      [req.params.id, req.params.photoId]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Photo introuvable' });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Removing a photo is a deletion — admin only.
+adminRouter.delete('/rencontres-passees/:id/photos/:photoId', adminOnly, validate(pastPhotoParam, 'params'), async (req, res, next) => {
+  try {
+    const result = await query(
+      'DELETE FROM rencontre_passee_photos WHERE id = $1 AND rencontre_passee_id = $2 RETURNING image_path',
+      [req.params.photoId, req.params.id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Photo introuvable' });
+    await deleteImage(result.rows[0].image_path);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // ---------- Inscriptions (admin + moderator) ----------

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { usePublicData } from '../lib/usePublic.js';
 import { api, dateParts } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
+import PastEventCard from '../components/PastEventCard.jsx';
 
 function InscriptionModal({ rencontre, onClose, onDone }) {
   const [form, setForm] = useState({ nom: '', entreprise: '', email: '', tel: '' });
@@ -246,36 +247,18 @@ export default function Home() {
       {/* PAST */}
       <section style={{ background: 'var(--beige)', marginTop: 56, padding: '96px 0' }}>
         <div className="container">
-          <div style={{ marginBottom: 52 }}>
-            <div className="kicker" style={{ marginBottom: 14 }}>Ils y étaient</div>
-            <h2 className="serif" style={{ fontWeight: 500, fontSize: 44, lineHeight: 1.08 }}>Rencontres passées</h2>
+          <div style={{ marginBottom: 52, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+            <div>
+              <div className="kicker" style={{ marginBottom: 14 }}>Ils y étaient</div>
+              <h2 className="serif" style={{ fontWeight: 500, fontSize: 44, lineHeight: 1.08 }}>Rencontres passées</h2>
+            </div>
+            <Link to="/rencontres-passees" style={{ textDecoration: 'none' }}>
+              <span className="btn-link" style={{ fontSize: 14, whiteSpace: 'nowrap' }}>Voir toutes les rencontres →</span>
+            </Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 34 }}>
-            {passees.map((p) => (
-              <article key={p.id} className="card hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 40, alignItems: 'center', padding: 36 }}>
-                <div>
-                  <div style={{ fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--gray-light)', fontWeight: 600, marginBottom: 12 }}>
-                    {p.date_label} · {p.lieu}
-                  </div>
-                  <h3 className="serif" style={{ fontSize: 30, fontWeight: 600, lineHeight: 1.12, marginBottom: 16 }}>{p.titre}</h3>
-                  <p style={{ fontSize: 15.5, lineHeight: 1.7, color: 'var(--gray)', marginBottom: 20 }}>{p.texte}</p>
-                  <div style={{ display: 'flex', gap: 20, fontSize: 13, color: 'var(--gray-light)' }}>
-                    <span>👥 {p.participants} participants</span>
-                    <span>📷 {p.nb_photos} photos</span>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 10, height: 240 }}>
-                  <div className={p.image_path ? '' : 'placeholder-pattern'} style={{ gridRow: 'span 2', borderRadius: 3, overflow: 'hidden' }}>
-                    {p.image_path && <img src={p.image_path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                  </div>
-                  <div className={p.image_path_2 ? '' : 'placeholder-pattern'} style={{ borderRadius: 3, overflow: 'hidden' }}>
-                    {p.image_path_2 && <img src={p.image_path_2} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                  </div>
-                  <div className={p.image_path_3 ? '' : 'placeholder-pattern'} style={{ borderRadius: 3, overflow: 'hidden' }}>
-                    {p.image_path_3 && <img src={p.image_path_3} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                  </div>
-                </div>
-              </article>
+            {passees.slice(0, 3).map((p) => (
+              <PastEventCard key={p.id} event={p} />
             ))}
           </div>
         </div>

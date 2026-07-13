@@ -101,6 +101,9 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
   rencontres passées, formulaire de demande d'adhésion.
 - Annuaire : recherche plein texte, filtres par catégorie, fiche détaillée par entreprise.
   Seuls les membres **validés pour la saison** apparaissent.
+- Rencontres passées : page dédiée listant toutes les rencontres passées ; un clic ouvre un
+  carrousel plein écran de **toutes** les photos (flèches, clavier, miniatures). Le nombre de
+  participants et de photos est calculé automatiquement (voir back-office).
 - L'association : mission, valeurs, mot du président, chronologie, chiffres clés.
 
 **Espace membre** (connexion email + mot de passe)
@@ -133,9 +136,13 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
   membre ne l'a pas changé. L'admin peut aussi réinitialiser l'accès à tout moment.
 - Rencontres : création, édition (avec photo affichée sur les cartes de la page d'accueil) ;
   suppression réservée aux administrateurs. Liste des inscrits avec impression et export Excel.
-- Rencontres passées : gestion complète de la section « Ils y étaient » de la page d'accueil —
-  titre, date, lieu, description, participants, et jusqu'à 3 photos par rencontre (1 grande +
-  2 petites, comme affiché sur l'accueil) ; suppression réservée aux administrateurs.
+- Rencontres passées : gestion complète de la section « Ils y étaient » et de la page publique
+  dédiée — titre, date, lieu, description, et **galerie de photos illimitée** par rencontre
+  (ajout, suppression réservée aux admins, choix de la photo principale mise en avant). Le
+  **nombre de photos affiché est celui réellement uploadé** (jamais saisi à la main), et le
+  **nombre de participants est récupéré automatiquement** quand la rencontre passée est liée à
+  une rencontre (comptage de ses inscriptions) ; sinon une valeur manuelle sert de repli.
+  La suppression d'une rencontre passée ou d'une de ses photos est réservée aux administrateurs.
 - Inscriptions : modification, confirmation ; annulation (suppression) réservée aux administrateurs.
 - Catégories : ajout, renommage, suppression (les entreprises deviennent « Non classée »).
 - Contenu du site : citation, signature et photo de la page d'accueil.

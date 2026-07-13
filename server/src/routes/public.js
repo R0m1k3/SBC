@@ -25,7 +25,21 @@ publicRouter.get('/bootstrap', async (_req, res, next) => {
           WHERE r.date_renc >= CURRENT_DATE
           GROUP BY r.id ORDER BY r.date_renc`
       ),
-      query('SELECT * FROM rencontres_passees ORDER BY id DESC'),
+      query(`
+        SELECT rp.id, rp.date_label, rp.lieu, rp.titre, rp.texte,
+               CASE WHEN rp.rencontre_id IS NOT NULL THEN COALESCE(rc.inscrits, 0) ELSE rp.participants END AS participants,
+               COALESCE(ph.n, 0) AS nb_photos,
+               COALESCE(ph.photos, '[]'::json) AS photos
+          FROM rencontres_passees rp
+          LEFT JOIN (
+            SELECT rencontre_passee_id, COUNT(*)::int AS n,
+                   json_agg(json_build_object('id', id, 'path', image_path) ORDER BY position, id) AS photos
+              FROM rencontre_passee_photos GROUP BY rencontre_passee_id
+          ) ph ON ph.rencontre_passee_id = rp.id
+          LEFT JOIN (
+            SELECT rencontre_id, COUNT(*)::int AS inscrits FROM inscriptions GROUP BY rencontre_id
+          ) rc ON rc.rencontre_id = rp.rencontre_id
+          ORDER BY rp.id DESC`),
     ]);
     const contentMap = Object.fromEntries(content.rows.map((r) => [r.key, r.value]));
     res.json({

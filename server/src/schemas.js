@@ -71,13 +71,14 @@ export const rencontrePasseeSchema = z.object({
   lieu: trimmed(200, 1),
   titre: trimmed(200, 1),
   texte: trimmed(2000, 1),
-  participants: z.coerce.number().int().min(0).max(100000),
-  nb_photos: z.coerce.number().int().min(0).max(100000),
+  // Manual fallback participant count; ignored when rencontre_id is set.
+  participants: z.coerce.number().int().min(0).max(100000).optional().default(0),
+  rencontre_id: z.coerce.number().int().positive().nullable().optional(),
 });
 
-export const pastEventImageParam = z.object({
+export const pastPhotoParam = z.object({
   id: z.coerce.number().int().positive(),
-  slot: z.coerce.number().int().min(1).max(3),
+  photoId: z.coerce.number().int().positive(),
 });
 
 export const categorySchema = z.object({ name: trimmed(80, 1) });

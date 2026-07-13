@@ -42,10 +42,13 @@ INSERT INTO inscriptions (rencontre_id, nom, entreprise, email, tel, statut) VAL
 
 -- Inserted oldest-first: the home page and admin list show these newest
 -- first (ORDER BY id DESC), so insertion order must be chronological.
-INSERT INTO rencontres_passees (date_label, lieu, titre, texte, participants, nb_photos) VALUES
-  ('Février 2026', 'La Filature, Nancy', 'Table ronde — Digitaliser sa PME', 'Retours d''expérience et bonnes pratiques : trois dirigeants membres ont partagé leur parcours de transformation numérique devant une salle comble.', 56, 15),
-  ('Avril 2026', 'Site industriel, Florange', 'Visite privée — Usine ArcelorMittal', 'Immersion industrielle exclusive pour nos membres au cœur d''un fleuron de la métallurgie lorraine, suivie d''un échange avec la direction du site.', 34, 22),
-  ('Juin 2026', 'Château de Rémicourt', 'Soirée de Gala annuelle', 'Plus de 200 convives réunis pour célébrer une saison d''exception. Une soirée d''élégance mêlant remise de trophées, dîner gastronomique et rencontres privilégiées entre membres du Club.', 210, 48);
+-- The displayed photo count is derived from actual uploads (0 until photos
+-- are added); the participants value here is the manual fallback shown when
+-- the event isn't linked to a rencontre.
+INSERT INTO rencontres_passees (date_label, lieu, titre, texte, participants) VALUES
+  ('Février 2026', 'La Filature, Nancy', 'Table ronde — Digitaliser sa PME', 'Retours d''expérience et bonnes pratiques : trois dirigeants membres ont partagé leur parcours de transformation numérique devant une salle comble.', 56),
+  ('Avril 2026', 'Site industriel, Florange', 'Visite privée — Usine ArcelorMittal', 'Immersion industrielle exclusive pour nos membres au cœur d''un fleuron de la métallurgie lorraine, suivie d''un échange avec la direction du site.', 34),
+  ('Juin 2026', 'Château de Rémicourt', 'Soirée de Gala annuelle', 'Plus de 200 convives réunis pour célébrer une saison d''exception. Une soirée d''élégance mêlant remise de trophées, dîner gastronomique et rencontres privilégiées entre membres du Club.', 210);
 
 INSERT INTO demandes_adhesion (nom, fonction, entreprise, email) VALUES
   ('Marc Dubois', 'Directeur général', 'Dubois Traiteur', 'm.dubois@dubois-traiteur.fr'),
