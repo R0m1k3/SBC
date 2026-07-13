@@ -15,7 +15,7 @@ export default function PastEventCard({ event }) {
       <div
         className={photo ? '' : 'placeholder-pattern'}
         style={{ borderRadius: 3, overflow: 'hidden', cursor: photo ? 'pointer' : 'default', ...extra }}
-        onClick={photo ? () => setCarouselAt(idx) : undefined}
+        onClick={photo ? (e) => { e.stopPropagation(); setCarouselAt(idx); } : undefined}
       >
         {photo && <img src={photo.path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
       </div>
@@ -24,7 +24,11 @@ export default function PastEventCard({ event }) {
 
   return (
     <>
-      <article className="card hero-grid" style={{ display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 40, alignItems: 'center', padding: 36 }}>
+      <article
+        className="card hero-grid"
+        style={{ display: 'grid', gridTemplateColumns: '1.15fr .85fr', gap: 40, alignItems: 'center', padding: 36, cursor: hasPhotos ? 'pointer' : 'default' }}
+        onClick={hasPhotos ? () => setCarouselAt(0) : undefined}
+      >
         <div>
           <div style={{ fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--gray-light)', fontWeight: 600, marginBottom: 12 }}>
             {event.date_label} · {event.lieu}
@@ -35,7 +39,7 @@ export default function PastEventCard({ event }) {
             <span>👥 {event.participants} participants</span>
             <span>📷 {event.nb_photos} photo{event.nb_photos > 1 ? 's' : ''}</span>
             {hasPhotos && (
-              <button className="btn-link" style={{ fontSize: 13 }} onClick={() => setCarouselAt(0)}>
+              <button className="btn-link" style={{ fontSize: 13 }} onClick={(e) => { e.stopPropagation(); setCarouselAt(0); }}>
                 Voir les photos →
               </button>
             )}
@@ -47,7 +51,7 @@ export default function PastEventCard({ event }) {
           {photos.length > 3 ? (
             <div
               style={{ borderRadius: 3, overflow: 'hidden', cursor: 'pointer', position: 'relative' }}
-              onClick={() => setCarouselAt(2)}
+              onClick={(e) => { e.stopPropagation(); setCarouselAt(2); }}
             >
               <img src={photos[2].path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,14,13,.55)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Newsreader',serif", fontSize: 22, fontWeight: 600 }}>
