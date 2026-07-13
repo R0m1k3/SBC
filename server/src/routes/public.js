@@ -19,13 +19,13 @@ publicRouter.get('/bootstrap', async (_req, res, next) => {
           WHERE m.valide = true ORDER BY m.nom`
       ),
       query(
-        `SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places,
+        `SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places, r.image_path,
                 COUNT(i.id)::int AS inscrits
            FROM rencontres r LEFT JOIN inscriptions i ON i.rencontre_id = r.id
           WHERE r.date_renc >= CURRENT_DATE
           GROUP BY r.id ORDER BY r.date_renc`
       ),
-      query('SELECT * FROM rencontres_passees ORDER BY id'),
+      query('SELECT * FROM rencontres_passees ORDER BY id DESC'),
     ]);
     const contentMap = Object.fromEntries(content.rows.map((r) => [r.key, r.value]));
     res.json({

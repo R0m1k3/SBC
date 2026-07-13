@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, dateParts, seasonLabel, statutLabel } from '../../lib/api.js';
+import { useAuth } from '../../lib/AuthContext.jsx';
 import Modal from '../Modal.jsx';
+import ImageSlot from '../ImageSlot.jsx';
 import { AccessCell, CredentialsModal } from './AccessControls.jsx';
 
 /* ---------------- Members ---------------- */
@@ -90,6 +92,8 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
 }
 
 export function MembersTab() {
+  const { user } = useAuth();
+  const isAdmin = user.role === 'admin';
   const [members, setMembers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [modal, setModal] = useState(null); // null | 'new' | member
@@ -176,9 +180,11 @@ export function MembersTab() {
                   />
                 </td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <button className="btn-link-gray" style={{ color: 'var(--gray)', marginRight: 14 }} onClick={() => toggle(m)}>
-                    {m.valide ? 'Suspendre' : 'Valider'}
-                  </button>
+                  {isAdmin && (
+                    <button className="btn-link-gray" style={{ color: 'var(--gray)', marginRight: 14 }} onClick={() => toggle(m)}>
+                      {m.valide ? 'Suspendre' : 'Valider'}
+                    </button>
+                  )}
                   <button className="btn-link" style={{ fontSize: 13 }} onClick={() => setModal(m)}>Modifier</button>
                 </td>
               </tr>
@@ -216,11 +222,13 @@ export function MembersTab() {
 /* ---------------- Rencontres ---------------- */
 
 function RencFormModal({ renc, onClose, onSaved }) {
+  const { user } = useAuth();
   const [form, setForm] = useState(
     renc
       ? { titre: renc.titre, date_renc: String(renc.date_renc).slice(0, 10), heure: renc.heure, lieu: renc.lieu, description: renc.description, places: renc.places }
       : { titre: '', date_renc: '', heure: '', lieu: '', description: '', places: 30 }
   );
+  const [image, setImage] = useState(renc?.image_path || '');
   const [error, setError] = useState('');
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -251,9 +259,20 @@ function RencFormModal({ renc, onClose, onSaved }) {
     <Modal onClose={onClose} maxWidth={560} header={{ kicker: 'Rencontres', title: renc ? 'Gérer la rencontre' : 'Nouvelle rencontre' }}>
       <form onSubmit={submit} style={{ padding: '26px 30px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <label className="field">Titre de la rencontre
-            <input name="titre" value={form.titre} onChange={onChange} required maxLength={200} />
-          </label>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+            <div style={{ width: 120, height: 84, flexShrink: 0 }}>
+              <ImageSlot
+                endpoint={renc ? `/api/admin/rencontres/${renc.id}/image` : undefined}
+                value={image}
+                disabled={!renc}
+                placeholder={renc ? 'Photo de la rencontre' : "Enregistrez d'abord la rencontre"}
+                onUploaded={setImage}
+              />
+            </div>
+            <label className="field" style={{ flex: 1 }}>Titre de la rencontre
+              <input name="titre" value={form.titre} onChange={onChange} required maxLength={200} />
+            </label>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <label className="field" style={{ gridColumn: 'span 2' }}>Date
               <input name="date_renc" type="date" value={form.date_renc} onChange={onChange} required />
@@ -279,7 +298,7 @@ function RencFormModal({ renc, onClose, onSaved }) {
           <button type="submit" className="btn btn-red btn-sm" style={{ flex: 1, fontSize: 14.5, padding: 13 }}>
             {renc ? 'Enregistrer' : 'Créer la rencontre'}
           </button>
-          {renc && (
+          {renc && user.role === 'admin' && (
             <button type="button" className="btn-link-gray" style={{ fontSize: 13.5, padding: '13px 10px' }} onClick={remove}>
               Supprimer
             </button>
@@ -298,6 +317,7 @@ function escHtml(v) {
 }
 
 function ParticipantsModal({ renc, onClose, onEdit, onCancel, refreshKey }) {
+  const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const { jour, mois } = dateParts(renc.date_renc);
   const meta = `${jour} ${mois} · ${renc.heure} · ${renc.lieu}`;
@@ -370,7 +390,9 @@ function ParticipantsModal({ renc, onClose, onEdit, onCancel, refreshKey }) {
                 <td><span className={`badge ${p.statut === 'confirmee' ? 'badge-green' : 'badge-amber'}`}>{statutLabel(p.statut)}</span></td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button className="btn-link" style={{ fontSize: 12.5, marginRight: 12 }} onClick={() => onEdit(p)}>Modifier</button>
-                  <button className="btn-link-gray" style={{ fontSize: 12.5 }} onClick={() => onCancel(p)}>Annuler</button>
+                  {user.role === 'admin' && (
+                    <button className="btn-link-gray" style={{ fontSize: 12.5 }} onClick={() => onCancel(p)}>Annuler</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -480,6 +502,7 @@ export function RencontresTab() {
 /* ---------------- Inscriptions ---------------- */
 
 function InscriptionEditModal({ inscription, rencontres, onClose, onSaved, onRequestCancel }) {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     nom: inscription.nom,
     entreprise: inscription.entreprise,
@@ -541,9 +564,11 @@ function InscriptionEditModal({ inscription, rencontres, onClose, onSaved, onReq
         {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
         <div style={{ display: 'flex', gap: 12, marginTop: 24, alignItems: 'center' }}>
           <button type="submit" className="btn btn-red btn-sm" style={{ flex: 1, fontSize: 14.5, padding: 13 }}>Enregistrer</button>
-          <button type="button" className="btn-link-gray" style={{ fontSize: 13.5, padding: '13px 10px' }} onClick={() => onRequestCancel(inscription)}>
-            Annuler l'inscription
-          </button>
+          {user.role === 'admin' && (
+            <button type="button" className="btn-link-gray" style={{ fontSize: 13.5, padding: '13px 10px' }} onClick={() => onRequestCancel(inscription)}>
+              Annuler l'inscription
+            </button>
+          )}
           <button type="button" className="btn btn-outline-soft btn-sm" style={{ fontSize: 14.5, padding: '13px 22px' }} onClick={onClose}>
             Fermer
           </button>
@@ -587,6 +612,7 @@ function CancelConfirmModal({ inscription, onClose, onDone }) {
 }
 
 export function InscriptionsTab() {
+  const { user } = useAuth();
   const [inscriptions, setInscriptions] = useState([]);
   const [rencontres, setRencontres] = useState([]);
   const [edit, setEdit] = useState(null);
@@ -623,7 +649,9 @@ export function InscriptionsTab() {
                 <td><span className={`badge ${i.statut === 'confirmee' ? 'badge-green' : 'badge-amber'}`}>{statutLabel(i.statut)}</span></td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button className="btn-link" style={{ fontSize: 13, marginRight: 14 }} onClick={() => setEdit(i)}>Modifier</button>
-                  <button className="btn-link-gray" onClick={() => setCancel(i)}>Annuler</button>
+                  {user.role === 'admin' && (
+                    <button className="btn-link-gray" onClick={() => setCancel(i)}>Annuler</button>
+                  )}
                 </td>
               </tr>
             ))}

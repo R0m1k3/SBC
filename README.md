@@ -112,24 +112,31 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
 **Rôles du back-office**
 - **Administrateur** : accès complet — tableau de bord, membres, rencontres, inscriptions,
   catégories, contenu du site, et gestion des comptes administrateurs/modérateurs.
-- **Modérateur** : accès restreint aux membres, aux rencontres et aux inscriptions
-  (opérations du quotidien) ; pas de tableau de bord, pas de catégories, pas de contenu
-  du site, pas de gestion des comptes. Un modérateur peut être promu administrateur (et
-  inversement) depuis l'onglet « Administrateurs ». Le système empêche de se supprimer
-  ou de se rétrograder soi-même, et de supprimer le dernier compte administrateur restant.
+- **Modérateur** : accès aux membres, aux rencontres, aux rencontres passées et aux
+  inscriptions (opérations du quotidien : créer, éditer) ; pas de tableau de bord, pas de
+  catégories, pas de contenu du site, pas de gestion des comptes. Aucune action destructrice
+  n'est autorisée à un modérateur : il ne peut ni valider/suspendre un membre, ni supprimer
+  une rencontre, une rencontre passée ou une inscription — ces actions restent strictement
+  réservées aux administrateurs, imposé côté serveur (pas seulement caché dans l'interface).
+  Un modérateur peut être promu administrateur (et inversement) depuis l'onglet
+  « Administrateurs ». Le système empêche de se supprimer ou de se rétrograder soi-même,
+  et de supprimer le dernier compte administrateur restant.
 
 **Espace admin** (rôle `admin`)
 - Administrateurs : création de comptes administrateur ou modérateur (mot de passe
   temporaire généré, changement obligatoire à la première connexion — même mécanique
   que pour les membres), réinitialisation d'accès, promotion/rétrogradation, suppression.
 - Tableau de bord : indicateurs temps réel, dernières inscriptions, prochaines rencontres.
-- Membres : création, édition, validation/suspension par saison (1er sept. → 31 août). La création
-  d'un membre avec email génère automatiquement un mot de passe temporaire, affiché à l'admin et
-  copiable ; il reste visible dans la liste tant que le membre ne l'a pas changé. L'admin peut aussi
-  réinitialiser l'accès à tout moment (membre ayant perdu son mot de passe).
-- Rencontres : création, édition, suppression ; liste des inscrits avec impression
-  et export Excel.
-- Inscriptions : modification, confirmation, annulation avec confirmation.
+- Membres : création, édition ; validation/suspension par saison réservée aux administrateurs
+  (1er sept. → 31 août). La création d'un membre avec email génère automatiquement un mot de
+  passe temporaire, affiché à l'admin et copiable ; il reste visible dans la liste tant que le
+  membre ne l'a pas changé. L'admin peut aussi réinitialiser l'accès à tout moment.
+- Rencontres : création, édition (avec photo affichée sur les cartes de la page d'accueil) ;
+  suppression réservée aux administrateurs. Liste des inscrits avec impression et export Excel.
+- Rencontres passées : gestion complète de la section « Ils y étaient » de la page d'accueil —
+  titre, date, lieu, description, participants, et jusqu'à 3 photos par rencontre (1 grande +
+  2 petites, comme affiché sur l'accueil) ; suppression réservée aux administrateurs.
+- Inscriptions : modification, confirmation ; annulation (suppression) réservée aux administrateurs.
 - Catégories : ajout, renommage, suppression (les entreprises deviennent « Non classée »).
 - Contenu du site : citation, signature et photo de la page d'accueil.
 

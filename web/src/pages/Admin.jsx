@@ -4,15 +4,18 @@ import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts, statutLabel } from '../lib/api.js';
 import { MembersTab, RencontresTab, InscriptionsTab } from '../components/admin/AdminTabs.jsx';
 import { CategoriesTab, ContenuTab } from '../components/admin/AdminContent.jsx';
+import { PastEventsTab } from '../components/admin/AdminPast.jsx';
 import { UsersTab } from '../components/admin/AdminUsers.jsx';
 
-// Moderators only get members/rencontres/inscriptions — everything else
-// (dashboard, taxonomy, site content, staff account management) is
-// admin-only, enforced both here (sidebar) and server-side (routes).
+// Moderators only get members/rencontres/inscriptions/rencontres passées
+// (create + edit, never delete) — everything else (dashboard, taxonomy,
+// site content, staff account management) is admin-only, enforced both
+// here (sidebar) and server-side (routes).
 const TABS = [
   { key: 'dashboard', icon: '◧', label: 'Tableau de bord', title: 'Tableau de bord', roles: ['admin'] },
   { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator'] },
   { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator'] },
+  { key: 'passees', icon: '▦', label: 'Rencontres passées', title: 'Rencontres passées', roles: ['admin', 'moderator'] },
   { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator'] },
   { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
   { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
@@ -143,6 +146,7 @@ export function AdminShell() {
           {tab === 'dashboard' && <Dashboard />}
           {tab === 'membres' && <MembersTab />}
           {tab === 'rencontres' && <RencontresTab />}
+          {tab === 'passees' && <PastEventsTab />}
           {tab === 'inscriptions' && <InscriptionsTab />}
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'contenu' && <ContenuTab />}

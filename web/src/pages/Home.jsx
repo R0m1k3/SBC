@@ -213,7 +213,10 @@ export default function Home() {
             const restantes = Math.max(0, e.places - e.inscrits);
             return (
               <div key={e.id} className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <div className="placeholder-pattern" style={{ height: 170, position: 'relative' }}>
+                <div className={e.image_path ? '' : 'placeholder-pattern'} style={{ height: 170, position: 'relative' }}>
+                  {e.image_path && (
+                    <img src={e.image_path} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )}
                   <div style={{ position: 'absolute', top: 16, left: 16, background: 'var(--dark)', color: '#fff', borderRadius: 3, padding: '8px 12px', textAlign: 'center', lineHeight: 1.05 }}>
                     <div className="serif" style={{ fontSize: 24, fontWeight: 600 }}>{jour}</div>
                     <div style={{ fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', color: '#B7AFA6' }}>{mois}</div>
@@ -262,9 +265,15 @@ export default function Home() {
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 10, height: 240 }}>
-                  <div className="placeholder-pattern" style={{ gridRow: 'span 2', borderRadius: 3 }} />
-                  <div className="placeholder-pattern" style={{ borderRadius: 3 }} />
-                  <div className="placeholder-pattern" style={{ borderRadius: 3 }} />
+                  <div className={p.image_path ? '' : 'placeholder-pattern'} style={{ gridRow: 'span 2', borderRadius: 3, overflow: 'hidden' }}>
+                    {p.image_path && <img src={p.image_path} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  </div>
+                  <div className={p.image_path_2 ? '' : 'placeholder-pattern'} style={{ borderRadius: 3, overflow: 'hidden' }}>
+                    {p.image_path_2 && <img src={p.image_path_2} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  </div>
+                  <div className={p.image_path_3 ? '' : 'placeholder-pattern'} style={{ borderRadius: 3, overflow: 'hidden' }}>
+                    {p.image_path_3 && <img src={p.image_path_3} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  </div>
                 </div>
               </article>
             ))}

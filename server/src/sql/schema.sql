@@ -56,8 +56,10 @@ CREATE TABLE IF NOT EXISTS rencontres (
     lieu        TEXT NOT NULL DEFAULT '' CHECK (char_length(lieu) <= 200),
     description TEXT NOT NULL DEFAULT '' CHECK (char_length(description) <= 2000),
     places      INTEGER NOT NULL CHECK (places >= 0 AND places <= 100000),
+    image_path  TEXT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE rencontres ADD COLUMN IF NOT EXISTS image_path TEXT;
 
 CREATE TABLE IF NOT EXISTS inscriptions (
     id           SERIAL PRIMARY KEY,
@@ -78,8 +80,15 @@ CREATE TABLE IF NOT EXISTS rencontres_passees (
     titre        TEXT NOT NULL,
     texte        TEXT NOT NULL,
     participants INTEGER NOT NULL DEFAULT 0,
-    nb_photos    INTEGER NOT NULL DEFAULT 0
+    nb_photos    INTEGER NOT NULL DEFAULT 0,
+    -- 1 large + 2 small photos, matching the home page grid.
+    image_path   TEXT,
+    image_path_2 TEXT,
+    image_path_3 TEXT
 );
+ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS image_path TEXT;
+ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS image_path_2 TEXT;
+ALTER TABLE rencontres_passees ADD COLUMN IF NOT EXISTS image_path_3 TEXT;
 
 CREATE TABLE IF NOT EXISTS demandes_adhesion (
     id         SERIAL PRIMARY KEY,

@@ -66,6 +66,20 @@ export const inscriptionAdminSchema = z.object({
   statut: z.enum(['confirmee', 'en_attente']),
 });
 
+export const rencontrePasseeSchema = z.object({
+  date_label: trimmed(60, 1),
+  lieu: trimmed(200, 1),
+  titre: trimmed(200, 1),
+  texte: trimmed(2000, 1),
+  participants: z.coerce.number().int().min(0).max(100000),
+  nb_photos: z.coerce.number().int().min(0).max(100000),
+});
+
+export const pastEventImageParam = z.object({
+  id: z.coerce.number().int().positive(),
+  slot: z.coerce.number().int().min(1).max(3),
+});
+
 export const categorySchema = z.object({ name: trimmed(80, 1) });
 
 export const staffRoleEnum = z.enum(['admin', 'moderator']);

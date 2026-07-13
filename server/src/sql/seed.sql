@@ -40,10 +40,12 @@ INSERT INTO inscriptions (rencontre_id, nom, entreprise, email, tel, statut) VAL
   ((SELECT id FROM rencontres WHERE titre = 'Afterwork Business & Basket'), 'Émilie Colin', 'Cristal Événements', 'e.colin@cristal-events.fr', '+33 3 83 38 66 12', 'confirmee'),
   ((SELECT id FROM rencontres WHERE titre = 'Conférence — L''esprit d''équipe'), 'Philippe Aubry', 'Groupe Batigest', 'p.aubry@batigest.fr', '+33 3 83 22 18 04', 'confirmee');
 
+-- Inserted oldest-first: the home page and admin list show these newest
+-- first (ORDER BY id DESC), so insertion order must be chronological.
 INSERT INTO rencontres_passees (date_label, lieu, titre, texte, participants, nb_photos) VALUES
-  ('Juin 2026', 'Château de Rémicourt', 'Soirée de Gala annuelle', 'Plus de 200 convives réunis pour célébrer une saison d''exception. Une soirée d''élégance mêlant remise de trophées, dîner gastronomique et rencontres privilégiées entre membres du Club.', 210, 48),
+  ('Février 2026', 'La Filature, Nancy', 'Table ronde — Digitaliser sa PME', 'Retours d''expérience et bonnes pratiques : trois dirigeants membres ont partagé leur parcours de transformation numérique devant une salle comble.', 56, 15),
   ('Avril 2026', 'Site industriel, Florange', 'Visite privée — Usine ArcelorMittal', 'Immersion industrielle exclusive pour nos membres au cœur d''un fleuron de la métallurgie lorraine, suivie d''un échange avec la direction du site.', 34, 22),
-  ('Février 2026', 'La Filature, Nancy', 'Table ronde — Digitaliser sa PME', 'Retours d''expérience et bonnes pratiques : trois dirigeants membres ont partagé leur parcours de transformation numérique devant une salle comble.', 56, 15);
+  ('Juin 2026', 'Château de Rémicourt', 'Soirée de Gala annuelle', 'Plus de 200 convives réunis pour célébrer une saison d''exception. Une soirée d''élégance mêlant remise de trophées, dîner gastronomique et rencontres privilégiées entre membres du Club.', 210, 48);
 
 INSERT INTO demandes_adhesion (nom, fonction, entreprise, email) VALUES
   ('Marc Dubois', 'Directeur général', 'Dubois Traiteur', 'm.dubois@dubois-traiteur.fr'),
