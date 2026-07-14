@@ -25,8 +25,10 @@ function ctaButton(url, label) {
   if (!url || !label) return '';
   return `
     <table role="presentation" width="300" cellpadding="0" cellspacing="0" border="0" style="width:300px;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
-      <tr><td width="300" height="48" align="center" valign="middle" bgcolor="#C1272D" style="width:300px;height:48px;background-color:#C1272D;">
-        <a href="${esc(url)}" target="_blank" style="display:block;width:300px;line-height:48px;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none;">${esc(label)}</a>
+      <tr><td width="300" height="48" align="center" valign="middle" bgcolor="#C1272D" style="width:300px;height:48px;background-color:#C1272D;text-align:center;">
+        <p align="center" style="margin:0;text-align:center;line-height:48px;mso-line-height-rule:exactly;">
+          <a href="${esc(url)}" target="_blank" style="display:inline-block;width:300px;line-height:48px;color:#FFFFFF !important;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none !important;"><span style="color:#FFFFFF !important;text-decoration:none !important;"><font face="Arial, Helvetica, sans-serif" color="#FFFFFF">${esc(label)}</font></span></a>
+        </p>
       </td></tr>
     </table>`;
 }
