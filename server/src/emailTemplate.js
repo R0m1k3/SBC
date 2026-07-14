@@ -66,6 +66,22 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
       ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#5A544E;${extra}">${escML(text)}</div>`
       : '';
 
+  // "Bulletproof" CTA button. Outlook (Word engine) ignores padding and
+  // display:inline-block on <a>, collapsing the button to a plain link, so
+  // it needs a VML roundrect. Other clients get the styled <a>, sized with
+  // a fixed width + line-height (not padding) so both paths match. The
+  // conditional comments are inert HTML comments in normal renderers.
+  const ctaButton = (url, label) => `
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${esc(url)}" style="height:48px;v-text-anchor:middle;width:300px;" arcsize="7%" fillcolor="#C1272D" strokecolor="#C1272D">
+          <w:anchorlock/>
+          <center style="color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;">${label}</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-->
+        <a href="${esc(url)}" target="_blank" style="display:inline-block;width:300px;line-height:48px;background-color:#C1272D;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none;border-radius:3px;-webkit-text-size-adjust:none;mso-hide:all;">${label}</a>
+        <!--<![endif]-->`;
+
   const html = `<!doctype html>
 <html lang="fr">
 <head>
@@ -114,7 +130,7 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   <tr><td style="padding:6px 40px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
       <td align="center" style="padding:28px 0 0;">
-        <a href="${esc(inscriptionUrl)}" style="display:inline-block;background-color:#C1272D;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:15px 40px;border-radius:3px;">Je m'inscris &agrave; la rencontre</a>
+        ${ctaButton(inscriptionUrl, "Je m'inscris &agrave; la rencontre")}
       </td>
     </tr></table>
     <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9A938B;text-align:center;padding-top:14px;line-height:1.6;">R&eacute;serv&eacute; aux membres &agrave; jour de leur adh&eacute;sion pour la saison en cours.</div>
