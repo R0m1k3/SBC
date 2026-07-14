@@ -52,10 +52,23 @@ export default function Footer() {
           <div style={{ fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', color: '#6E675F', fontWeight: 600, marginBottom: 16 }}>
             Suivez-nous
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
-            <span>LinkedIn</span>
-            <span>Instagram</span>
-            <span>Facebook</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-start' }}>
+            <a
+              href="https://www.facebook.com/search/top?q=sluc%20business%20club"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={linkStyle}
+            >
+              Facebook
+            </a>
+            <a
+              href="https://www.linkedin.com/company/club-affaires-stanislas/posts/?feedView=all"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={linkStyle}
+            >
+              LinkedIn
+            </a>
           </div>
         </div>
       </div>
