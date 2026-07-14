@@ -244,20 +244,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SLUC LINK */}
+      {/* OFFICIAL SLUC PARTNER */}
       <section className="container" style={{ paddingBottom: 56 }}>
         <a
-          href="https://www.sluc-nancy-basket.com"
+          href="https://sluc-basket.fr/"
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Visiter le site officiel du SLUC Nancy Basket"
           style={{ display: 'grid', gridTemplateColumns: '110px 1fr auto', alignItems: 'center', gap: 28, background: 'var(--dark)', borderRadius: 6, padding: '28px 32px', textDecoration: 'none', color: 'inherit' }}
         >
-          <div style={{ aspectRatio: '1/1', width: 110, borderRadius: 8, overflow: 'hidden', background: '#fff', padding: 14 }}>
-            <img src="/assets/logo.jpg" alt="Logo SLUC Nancy Basket" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <div style={{ aspectRatio: '1/1', width: 110, borderRadius: 8, overflow: 'hidden', background: '#000' }}>
+            <img src="/assets/sluc-nancy-basket.png" alt="Logo officiel du SLUC Nancy Basket" style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <div>
             <div style={{ fontSize: 11.5, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--red-soft)', fontWeight: 600, marginBottom: 8 }}>
-              Partenaire officiel
+              Partenaire officiel du
             </div>
             <div className="serif" style={{ fontSize: 22, fontWeight: 600, color: '#fff', marginBottom: 6 }}>SLUC Nancy Basket</div>
             <div style={{ fontSize: 14, lineHeight: 1.5, color: '#B7AFA6' }}>
