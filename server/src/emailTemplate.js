@@ -49,7 +49,9 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
     year: 'numeric',
   });
   const restantes = Math.max(0, r.places - (r.inscrits ?? 0));
-  const inscriptionUrl = `${baseUrl}/?inscription=${r.id}`;
+  // A dedicated route is more reliable from Outlook than a homepage query
+  // string: redirects, tracking filters and cached homepages can drop it.
+  const inscriptionUrl = `${baseUrl}/inscription/${r.id}`;
   const logoUrl = `${baseUrl}/assets/logo.jpg`;
   const subject = `Invitation — ${r.titre} · ${dateStr}`;
 
@@ -71,21 +73,17 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
       ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:25px;mso-line-height-rule:exactly;color:#5A544E;${extra}">${escML(text)}</td></tr></table>`
       : '';
 
-  // "Bulletproof" CTA button. Outlook (Word engine) ignores padding and
-  // display:inline-block on <a>, collapsing the button to a plain link, so
-  // it needs a VML roundrect. Other clients get the styled <a>, sized with
-  // a fixed width + line-height (not padding) so both paths match. The
-  // conditional comments are inert HTML comments in normal renderers.
+  // A table-backed CTA survives rich-text paste into Outlook. In particular,
+  // the visible label remains a normal <a href>, whereas VML hyperlinks are
+  // commonly stripped when Outlook receives them through the clipboard.
   const ctaButton = (url, label) => `
-        <!--[if mso]>
-        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${esc(url)}" style="height:48px;v-text-anchor:middle;width:300px;" arcsize="7%" fillcolor="#C1272D" strokecolor="#C1272D">
-          <w:anchorlock/>
-          <center style="color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;">${label}</center>
-        </v:roundrect>
-        <![endif]-->
-        <!--[if !mso]><!-->
-        <a href="${esc(url)}" target="_blank" style="display:inline-block;width:300px;line-height:48px;background-color:#C1272D;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none;border-radius:3px;-webkit-text-size-adjust:none;">${label}</a>
-        <!--<![endif]-->`;
+        <table role="presentation" width="300" cellpadding="0" cellspacing="0" border="0" style="width:300px;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+          <tr>
+            <td width="300" height="48" align="center" valign="middle" bgcolor="#C1272D" style="width:300px;height:48px;background-color:#C1272D;">
+              <a href="${esc(url)}" target="_blank" title="Ouvrir l'inscription" style="display:block;width:300px;line-height:48px;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none;-webkit-text-size-adjust:none;">${label}</a>
+            </td>
+          </tr>
+        </table>`;
 
   const html = `<!doctype html>
 <html lang="fr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">

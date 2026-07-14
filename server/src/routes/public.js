@@ -56,6 +56,26 @@ publicRouter.get('/bootstrap', async (_req, res, next) => {
   }
 });
 
+// Direct event lookup used by links from invitation emails. It deliberately
+// does not depend on the homepage bootstrap payload, so the registration page
+// can always resolve a valid upcoming event by id.
+publicRouter.get('/rencontres/:id', validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places,
+              r.participants_par_compte, r.image_path, COUNT(i.id)::int AS inscrits
+         FROM rencontres r LEFT JOIN inscriptions i ON i.rencontre_id = r.id
+        WHERE r.id = $1 AND r.date_renc >= CURRENT_DATE
+        GROUP BY r.id`,
+      [req.params.id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Rencontre introuvable' });
+    res.json({ rencontre: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Membership request (home page form)
 publicRouter.post(
   '/demandes-adhesion',

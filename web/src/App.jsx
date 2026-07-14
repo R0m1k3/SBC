@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
+import Inscription from './pages/Inscription.jsx';
 import Annuaire from './pages/Annuaire.jsx';
 import Association from './pages/Association.jsx';
 import RencontresPassees from './pages/RencontresPassees.jsx';
@@ -33,6 +34,7 @@ export default function App() {
       <div style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/inscription/:id" element={<Inscription />} />
           <Route path="/annuaire" element={<Annuaire />} />
           <Route path="/rencontres-passees" element={<RencontresPassees />} />
           <Route path="/association" element={<Association />} />

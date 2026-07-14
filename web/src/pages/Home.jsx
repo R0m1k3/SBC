@@ -6,7 +6,7 @@ import { api, dateParts } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
 import PastEventCard from '../components/PastEventCard.jsx';
 
-function InscriptionModal({ rencontre, onClose, onDone }) {
+export function InscriptionModal({ rencontre, onClose, onDone }) {
   const { user, login } = useAuth();
   const [context, setContext] = useState(null);
   const [participants, setParticipants] = useState(['']);
