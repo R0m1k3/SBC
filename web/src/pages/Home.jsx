@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { usePublicData } from '../lib/usePublic.js';
 import { api, dateParts } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
@@ -75,10 +75,25 @@ function InscriptionModal({ rencontre, onClose, onDone }) {
 
 export default function Home() {
   const { data, reload } = usePublicData();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [inscrRenc, setInscrRenc] = useState(null);
   const [homeDone, setHomeDone] = useState(false);
   const [homeError, setHomeError] = useState('');
   const [form, setForm] = useState({ nom: '', fonction: '', entreprise: '', email: '' });
+
+  // Registration links in invitation emails point to /?inscription=<id> :
+  // once the public data is loaded, open the matching inscription modal.
+  useEffect(() => {
+    const id = Number(searchParams.get('inscription'));
+    if (!id || !data) return;
+    const renc = (data.rencontres || []).find((r) => r.id === id);
+    if (renc) setInscrRenc(renc);
+  }, [data, searchParams]);
+
+  const closeInscription = () => {
+    setInscrRenc(null);
+    if (searchParams.has('inscription')) setSearchParams({}, { replace: true });
+  };
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -329,7 +344,7 @@ export default function Home() {
       </section>
 
       {inscrRenc && (
-        <InscriptionModal rencontre={inscrRenc} onClose={() => setInscrRenc(null)} onDone={reload} />
+        <InscriptionModal rencontre={inscrRenc} onClose={closeInscription} onDone={reload} />
       )}
     </main>
   );

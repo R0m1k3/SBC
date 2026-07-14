@@ -316,6 +316,101 @@ function escHtml(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Preview + export of the ready-to-send HTML invitation email generated
+// server-side for one rencontre. "Copier l'email" puts the rendered HTML
+// on the clipboard (rich text where supported, so pasting into a mail
+// client keeps the design); the .html download covers the rest.
+function EmailModal({ renc, onClose }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState('');
+
+  useEffect(() => {
+    api.get(`/api/admin/rencontres/${renc.id}/email`).then(setData).catch((e) => setError(e.message));
+  }, [renc.id]);
+
+  const flash = (what) => {
+    setCopied(what);
+    setTimeout(() => setCopied(''), 1800);
+  };
+
+  const copyEmail = async () => {
+    setError('');
+    try {
+      if (navigator.clipboard?.write && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new window.ClipboardItem({
+            'text/html': new Blob([data.html], { type: 'text/html' }),
+            'text/plain': new Blob([`${data.subject}\n${data.inscriptionUrl}`], { type: 'text/plain' }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(data.html);
+      }
+      flash('email');
+    } catch {
+      setError('Copie impossible dans ce navigateur — utilisez le téléchargement.');
+    }
+  };
+
+  const copyText = async (text, what) => {
+    setError('');
+    try {
+      await navigator.clipboard.writeText(text);
+      flash(what);
+    } catch {
+      setError('Copie impossible dans ce navigateur.');
+    }
+  };
+
+  const download = () => {
+    const blob = new Blob([data.html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const slug = renc.titre.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+    a.href = url;
+    a.download = `invitation-${slug}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+
+  return (
+    <Modal onClose={onClose} maxWidth={760} header={{ kicker: "Email d'invitation", title: renc.titre }}>
+      {!data && !error && <p style={{ padding: '30px 32px', color: 'var(--gray-light)' }}>Génération de l'email…</p>}
+      {error && <p className="error-text" style={{ padding: '20px 32px 0' }}>{error}</p>}
+      {data && (
+        <>
+          <div style={{ padding: '18px 32px 0', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="btn btn-red btn-sm" style={{ fontSize: 13.5, padding: '11px 18px' }} onClick={copyEmail}>
+              {copied === 'email' ? '✓ Copié' : "Copier l'email"}
+            </button>
+            <button className="btn btn-sm" style={{ background: 'var(--admin-bg)', fontSize: 13.5, padding: '11px 18px' }} onClick={() => copyText(data.subject, 'subject')}>
+              {copied === 'subject' ? '✓ Copié' : "Copier l'objet"}
+            </button>
+            <button className="btn btn-sm" style={{ background: 'var(--admin-bg)', fontSize: 13.5, padding: '11px 18px' }} onClick={() => copyText(data.inscriptionUrl, 'link')}>
+              {copied === 'link' ? '✓ Copié' : "Copier le lien d'inscription"}
+            </button>
+            <button className="btn btn-outline-soft btn-sm" style={{ fontSize: 13.5, padding: '11px 18px' }} onClick={download}>
+              ↓ Télécharger (.html)
+            </button>
+          </div>
+          <div style={{ padding: '14px 32px 6px', fontSize: 12.5, color: 'var(--gray-light)', lineHeight: 1.55 }}>
+            <strong style={{ color: 'var(--gray)' }}>Objet :</strong> {data.subject}
+            <br />
+            Collez l'email directement dans votre logiciel de messagerie (le bouton « Copier l'email »
+            conserve la mise en forme), ou envoyez le fichier .html avec votre outil d'emailing.
+          </div>
+          <div style={{ margin: '14px 32px 30px', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+            <iframe title="Aperçu de l'email" srcDoc={data.html} sandbox="" style={{ display: 'block', width: '100%', height: 480, border: 'none', background: '#F2EEE8' }} />
+          </div>
+        </>
+      )}
+    </Modal>
+  );
+}
+
 function ParticipantsModal({ renc, onClose, onEdit, onCancel, refreshKey }) {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
@@ -412,6 +507,7 @@ export function RencontresTab() {
   const [rencontres, setRencontres] = useState([]);
   const [formModal, setFormModal] = useState(null); // null | 'new' | renc
   const [participantsRenc, setParticipantsRenc] = useState(null);
+  const [emailRenc, setEmailRenc] = useState(null);
   const [editInscr, setEditInscr] = useState(null);
   const [cancelInscr, setCancelInscr] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -450,9 +546,12 @@ export function RencontresTab() {
                 <div className="serif" style={{ fontSize: 22, fontWeight: 600, color: 'var(--red)' }}>{e.inscrits}</div>
                 <div style={{ fontSize: 11, color: 'var(--gray-light)' }}>inscrits / {e.places}</div>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button className="btn btn-dark btn-sm" style={{ fontSize: 13, padding: '9px 16px' }} onClick={() => setParticipantsRenc(e)}>
                   Inscrits ({e.inscrits})
+                </button>
+                <button className="btn btn-sm" style={{ background: 'var(--admin-bg)', fontSize: 13, padding: '9px 16px' }} onClick={() => setEmailRenc(e)} title="Générer l'email d'invitation">
+                  ✉ Email
                 </button>
                 <button className="btn btn-sm" style={{ background: 'var(--admin-bg)', fontSize: 13, padding: '9px 16px' }} onClick={() => setFormModal(e)}>
                   Gérer
@@ -479,6 +578,7 @@ export function RencontresTab() {
           onCancel={setCancelInscr}
         />
       )}
+      {emailRenc && <EmailModal renc={emailRenc} onClose={() => setEmailRenc(null)} />}
       {editInscr && (
         <InscriptionEditModal
           inscription={editInscr}

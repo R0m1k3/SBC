@@ -18,6 +18,7 @@ import { imageUpload, saveImage, deleteImage } from '../uploads.js';
 import { ensureMemberAccess } from '../memberAccess.js';
 import { createStaffUser, resetStaffAccess } from '../userAccess.js';
 import { AccessError } from '../errors.js';
+import { buildInvitationEmail } from '../emailTemplate.js';
 
 export const adminRouter = Router();
 
@@ -225,6 +226,22 @@ adminRouter.post('/rencontres/:id/image', validate(idParam, 'params'), (req, res
       next(e);
     }
   });
+});
+
+// Ready-to-send HTML invitation email for a rencontre (admin + moderator).
+// The registration link opens the public site with the inscription modal
+// pre-opened (/?inscription=<id>). URLs are absolute, built from the
+// request's host so they match however the site is reached (direct port
+// or reverse proxy).
+adminRouter.get('/rencontres/:id/email', validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    const result = await query(`${RENC_SQL} WHERE r.id = $1 GROUP BY r.id`, [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Rencontre introuvable' });
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    res.json(buildInvitationEmail({ rencontre: result.rows[0], baseUrl }));
+  } catch (err) {
+    next(err);
+  }
 });
 
 adminRouter.get('/rencontres/:id/inscriptions', validate(idParam, 'params'), async (req, res, next) => {

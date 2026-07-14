@@ -39,6 +39,11 @@ app.use(
       },
     },
     xFrameOptions: { action: 'deny' },
+    // Site images (logo, uploads) are public and referenced from outside
+    // the app's origin — e.g. the logo embedded in invitation emails is
+    // loaded by webmail clients. The default same-origin policy would
+    // block those loads.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 app.use(compression());
