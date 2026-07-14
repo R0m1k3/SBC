@@ -81,7 +81,7 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
           <tr>
             <td width="300" height="48" align="center" valign="middle" bgcolor="#C1272D" style="width:300px;height:48px;background-color:#C1272D;text-align:center;">
               <p align="center" style="margin:0;text-align:center;line-height:48px;mso-line-height-rule:exactly;">
-                <a href="${esc(url)}" target="_blank" title="Ouvrir l'inscription" style="display:inline-block;width:300px;line-height:48px;color:#FFFFFF !important;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none !important;-webkit-text-size-adjust:none;"><span style="color:#FFFFFF !important;text-decoration:none !important;"><font face="Arial, Helvetica, sans-serif" color="#FFFFFF">${label}</font></span></a>
+                <a href="${esc(url)}" target="_blank" title="Ouvrir l'inscription" style="color:#FFFFFF !important;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none !important;mso-style-textfill-type:solid;mso-style-textfill-fill-color:#FFFFFF;mso-style-textfill-fill-alpha:100%;"><font face="Arial, Helvetica, sans-serif" color="#FFFFFF"><b><u style="color:#FFFFFF !important;text-decoration:none !important;mso-style-textfill-fill-color:#FFFFFF;">${label}</u></b></font></a>
               </p>
             </td>
           </tr>
