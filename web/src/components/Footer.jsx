@@ -80,7 +80,7 @@ export default function Footer() {
           fontSize: 12.5, color: '#6E675F',
         }}
       >
-        <span>© {new Date().getFullYear()} Business Club SLUC Nancy</span>
+        <span>© {new Date().getFullYear()} SLUC Nancy Business Club</span>
         <span>Mentions légales · Confidentialité</span>
       </div>
     </footer>
