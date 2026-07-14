@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api.js';
+import { copyRichEmail } from '../../lib/emailClipboard.js';
 
 const INITIAL = {
   subject: 'Actualités du Business Club SLUC Nancy',
@@ -10,27 +11,6 @@ const INITIAL = {
   buttonUrl: window.location.origin,
   signature: "À très bientôt,\nL'équipe du Business Club SLUC Nancy",
 };
-
-function bodyFragment(html) {
-  return new DOMParser().parseFromString(html, 'text/html').body.innerHTML.trim();
-}
-
-function legacyCopy(html) {
-  const holder = document.createElement('div');
-  holder.contentEditable = 'true';
-  holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:700px;opacity:0;pointer-events:none;';
-  holder.innerHTML = html;
-  document.body.appendChild(holder);
-  const range = document.createRange();
-  range.selectNodeContents(holder);
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
-  const copied = document.execCommand('copy');
-  selection.removeAllRanges();
-  holder.remove();
-  if (!copied) throw new Error('Rich copy failed');
-}
 
 export function EmailCreatorTab() {
   const [form, setForm] = useState(INITIAL);
@@ -69,17 +49,7 @@ export function EmailCreatorTab() {
 
   const copyEmail = async () => {
     try {
-      const fragment = bodyFragment(data.html);
-      if (navigator.clipboard?.write && window.ClipboardItem) {
-        await navigator.clipboard.write([
-          new window.ClipboardItem({
-            'text/html': new Blob([fragment], { type: 'text/html' }),
-            'text/plain': new Blob([`${form.subject}\n\n${form.body}`], { type: 'text/plain' }),
-          }),
-        ]);
-      } else {
-        legacyCopy(fragment);
-      }
+      await copyRichEmail(data.html, `${form.subject}\n\n${form.body}`);
       flash('email');
     } catch {
       setError('La copie enrichie a échoué dans ce navigateur. Utilisez le téléchargement HTML.');

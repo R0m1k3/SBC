@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, dateParts, seasonLabel, statutLabel } from '../../lib/api.js';
+import { copyRichEmail } from '../../lib/emailClipboard.js';
 import { useAuth } from '../../lib/AuthContext.jsx';
 import Modal from '../Modal.jsx';
 import ImageSlot from '../ImageSlot.jsx';
@@ -319,34 +320,6 @@ function escHtml(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Clipboard HTML must be a fragment, not a second complete document. Outlook
-// otherwise rebuilds the pasted <body> and drops part of the outer layout.
-function emailBodyFragment(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.innerHTML.trim();
-}
-
-// Older browsers do not expose ClipboardItem. A real rich-text selection is
-// still preferable to copying the HTML source as plain text.
-function legacyCopyRichHtml(html) {
-  const holder = document.createElement('div');
-  holder.setAttribute('contenteditable', 'true');
-  holder.setAttribute('aria-hidden', 'true');
-  holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:700px;opacity:0;pointer-events:none;';
-  holder.innerHTML = html;
-  document.body.appendChild(holder);
-
-  const selection = window.getSelection();
-  const range = document.createRange();
-  range.selectNodeContents(holder);
-  selection.removeAllRanges();
-  selection.addRange(range);
-  const copied = document.execCommand('copy');
-  selection.removeAllRanges();
-  holder.remove();
-  if (!copied) throw new Error('Rich HTML copy failed');
-}
-
 // Composer + preview of the ready-to-send HTML invitation email generated
 // server-side for one rencontre. Every text zone (salutation, intro,
 // conclusion, signature) is editable — the preview regenerates as the
@@ -402,17 +375,7 @@ function EmailModal({ renc, onClose }) {
   const copyEmail = async () => {
     setError('');
     try {
-      const fragment = emailBodyFragment(data.html);
-      if (navigator.clipboard?.write && window.ClipboardItem) {
-        await navigator.clipboard.write([
-          new window.ClipboardItem({
-            'text/html': new Blob([fragment], { type: 'text/html' }),
-            'text/plain': new Blob([`${data.subject}\n${data.inscriptionUrl}`], { type: 'text/plain' }),
-          }),
-        ]);
-      } else {
-        legacyCopyRichHtml(fragment);
-      }
+      await copyRichEmail(data.html, `${data.subject}\n${data.inscriptionUrl}`);
       flash('email');
     } catch {
       setError('Copie impossible dans ce navigateur — utilisez le téléchargement.');
