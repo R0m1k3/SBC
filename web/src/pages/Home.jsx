@@ -187,6 +187,8 @@ export default function Home() {
         </div>
         <div className="container">
           <div className="marquee-mask">
+            <div className="marquee-fade marquee-fade-left" />
+            <div className="marquee-fade marquee-fade-right" />
             <div className="marquee-track">
               {marquee.map((m, i) => (
                 <div key={`${m.id}-${i}`} style={{ width: 210, flexShrink: 0, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
