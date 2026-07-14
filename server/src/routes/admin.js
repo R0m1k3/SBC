@@ -41,7 +41,8 @@ const MEMBER_SQL = `
     LEFT JOIN users u ON u.member_id = m.id`;
 
 const RENC_SQL = `
-  SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places, r.image_path,
+  SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places,
+         r.participants_par_compte, r.image_path,
          COUNT(i.id)::int AS inscrits
     FROM rencontres r LEFT JOIN inscriptions i ON i.rencontre_id = r.id`;
 
@@ -174,9 +175,9 @@ adminRouter.post('/rencontres', validate(rencontreSchema), async (req, res, next
   try {
     const d = req.data;
     const result = await query(
-      `INSERT INTO rencontres (titre, date_renc, heure, lieu, description, places)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [d.titre, d.date_renc, d.heure, d.lieu, d.description, d.places]
+      `INSERT INTO rencontres (titre, date_renc, heure, lieu, description, places, participants_par_compte)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [d.titre, d.date_renc, d.heure, d.lieu, d.description, d.places, d.participants_par_compte]
     );
     res.status(201).json({ id: result.rows[0].id });
   } catch (err) {
@@ -188,9 +189,11 @@ adminRouter.put('/rencontres/:id', validate(idParam, 'params'), validate(rencont
   try {
     const d = req.data;
     const result = await query(
-      `UPDATE rencontres SET titre=$1, date_renc=$2, heure=$3, lieu=$4, description=$5, places=$6
-        WHERE id=$7 RETURNING id`,
-      [d.titre, d.date_renc, d.heure, d.lieu, d.description, d.places, req.params.id]
+      `UPDATE rencontres SET titre=$1, date_renc=$2, heure=$3, lieu=$4, description=$5,
+              places=$6, participants_par_compte=$7
+        WHERE id=$8 RETURNING id`,
+      [d.titre, d.date_renc, d.heure, d.lieu, d.description, d.places,
+       d.participants_par_compte, req.params.id]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'Rencontre introuvable' });
     res.json({ ok: true });

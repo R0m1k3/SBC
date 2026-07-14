@@ -56,14 +56,20 @@ CREATE TABLE IF NOT EXISTS rencontres (
     lieu        TEXT NOT NULL DEFAULT '' CHECK (char_length(lieu) <= 200),
     description TEXT NOT NULL DEFAULT '' CHECK (char_length(description) <= 2000),
     places      INTEGER NOT NULL CHECK (places >= 0 AND places <= 100000),
+    participants_par_compte INTEGER NOT NULL DEFAULT 1 CHECK (participants_par_compte BETWEEN 1 AND 100),
     image_path  TEXT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE rencontres ADD COLUMN IF NOT EXISTS image_path TEXT;
+ALTER TABLE rencontres ADD COLUMN IF NOT EXISTS participants_par_compte INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE rencontres DROP CONSTRAINT IF EXISTS rencontres_participants_par_compte_check;
+ALTER TABLE rencontres ADD CONSTRAINT rencontres_participants_par_compte_check
+  CHECK (participants_par_compte BETWEEN 1 AND 100);
 
 CREATE TABLE IF NOT EXISTS inscriptions (
     id           SERIAL PRIMARY KEY,
     rencontre_id INTEGER NOT NULL REFERENCES rencontres(id) ON DELETE CASCADE,
+    member_id    INTEGER REFERENCES members(id) ON DELETE SET NULL,
     nom          TEXT NOT NULL CHECK (char_length(nom) BETWEEN 1 AND 120),
     entreprise   TEXT NOT NULL CHECK (char_length(entreprise) BETWEEN 1 AND 120),
     email        CITEXT CHECK (char_length(email) <= 254),
@@ -72,6 +78,12 @@ CREATE TABLE IF NOT EXISTS inscriptions (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_inscriptions_rencontre ON inscriptions(rencontre_id);
+ALTER TABLE inscriptions ADD COLUMN IF NOT EXISTS member_id INTEGER REFERENCES members(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_inscriptions_member_rencontre ON inscriptions(member_id, rencontre_id);
+-- Attach legacy registrations when their email identifies a member account.
+UPDATE inscriptions i SET member_id = m.id
+  FROM members m
+ WHERE i.member_id IS NULL AND i.email IS NOT NULL AND i.email = m.email;
 
 CREATE TABLE IF NOT EXISTS rencontres_passees (
     id           SERIAL PRIMARY KEY,

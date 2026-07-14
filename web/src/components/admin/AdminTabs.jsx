@@ -225,8 +225,8 @@ function RencFormModal({ renc, onClose, onSaved }) {
   const { user } = useAuth();
   const [form, setForm] = useState(
     renc
-      ? { titre: renc.titre, date_renc: String(renc.date_renc).slice(0, 10), heure: renc.heure, lieu: renc.lieu, description: renc.description, places: renc.places }
-      : { titre: '', date_renc: '', heure: '', lieu: '', description: '', places: 30 }
+      ? { titre: renc.titre, date_renc: String(renc.date_renc).slice(0, 10), heure: renc.heure, lieu: renc.lieu, description: renc.description, places: renc.places, participants_par_compte: renc.participants_par_compte || 1 }
+      : { titre: '', date_renc: '', heure: '', lieu: '', description: '', places: 30, participants_par_compte: 1 }
   );
   const [image, setImage] = useState(renc?.image_path || '');
   const [error, setError] = useState('');
@@ -281,12 +281,15 @@ function RencFormModal({ renc, onClose, onSaved }) {
               <input name="heure" value={form.heure} onChange={onChange} placeholder="18h30" maxLength={20} />
             </label>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12 }}>
             <label className="field">Lieu
               <input name="lieu" value={form.lieu} onChange={onChange} required maxLength={200} />
             </label>
-            <label className="field">Places
+            <label className="field">Places totales
               <input name="places" type="number" min={0} max={100000} value={form.places} onChange={onChange} required />
+            </label>
+            <label className="field">Par compte
+              <input name="participants_par_compte" type="number" min={1} max={100} value={form.participants_par_compte} onChange={onChange} required />
             </label>
           </div>
           <label className="field">Description
@@ -314,6 +317,34 @@ function RencFormModal({ renc, onClose, onSaved }) {
 
 function escHtml(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Clipboard HTML must be a fragment, not a second complete document. Outlook
+// otherwise rebuilds the pasted <body> and drops part of the outer layout.
+function emailBodyFragment(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.innerHTML.trim();
+}
+
+// Older browsers do not expose ClipboardItem. A real rich-text selection is
+// still preferable to copying the HTML source as plain text.
+function legacyCopyRichHtml(html) {
+  const holder = document.createElement('div');
+  holder.setAttribute('contenteditable', 'true');
+  holder.setAttribute('aria-hidden', 'true');
+  holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:700px;opacity:0;pointer-events:none;';
+  holder.innerHTML = html;
+  document.body.appendChild(holder);
+
+  const selection = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(holder);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  const copied = document.execCommand('copy');
+  selection.removeAllRanges();
+  holder.remove();
+  if (!copied) throw new Error('Rich HTML copy failed');
 }
 
 // Composer + preview of the ready-to-send HTML invitation email generated
@@ -371,15 +402,16 @@ function EmailModal({ renc, onClose }) {
   const copyEmail = async () => {
     setError('');
     try {
+      const fragment = emailBodyFragment(data.html);
       if (navigator.clipboard?.write && window.ClipboardItem) {
         await navigator.clipboard.write([
           new window.ClipboardItem({
-            'text/html': new Blob([data.html], { type: 'text/html' }),
+            'text/html': new Blob([fragment], { type: 'text/html' }),
             'text/plain': new Blob([`${data.subject}\n${data.inscriptionUrl}`], { type: 'text/plain' }),
           }),
         ]);
       } else {
-        await navigator.clipboard.writeText(data.html);
+        legacyCopyRichHtml(fragment);
       }
       flash('email');
     } catch {
@@ -602,6 +634,7 @@ export function RencontresTab() {
               <div style={{ textAlign: 'center' }}>
                 <div className="serif" style={{ fontSize: 22, fontWeight: 600, color: 'var(--red)' }}>{e.inscrits}</div>
                 <div style={{ fontSize: 11, color: 'var(--gray-light)' }}>inscrits / {e.places}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--gray-light)', marginTop: 3 }}>max. {e.participants_par_compte} / compte</div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button className="btn btn-dark btn-sm" style={{ fontSize: 13, padding: '9px 16px' }} onClick={() => setParticipantsRenc(e)}>

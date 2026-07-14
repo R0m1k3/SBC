@@ -59,11 +59,16 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
     restantes > 0
       ? `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`
       : 'Complet &mdash; liste d&rsquo;attente',
+    r.participants_par_compte
+      ? `${r.participants_par_compte} participant${r.participants_par_compte > 1 ? 's' : ''} maximum par compte membre`
+      : '',
   ].filter(Boolean);
 
+  // Spacing belongs on table cells: Outlook's Word renderer commonly drops
+  // padding and margins applied to div/p elements when HTML is pasted.
   const para = (text, extra = '') =>
     text
-      ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#5A544E;${extra}">${escML(text)}</div>`
+      ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:25px;mso-line-height-rule:exactly;color:#5A544E;${extra}">${escML(text)}</td></tr></table>`
       : '';
 
   // "Bulletproof" CTA button. Outlook (Word engine) ignores padding and
@@ -79,24 +84,29 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
         </v:roundrect>
         <![endif]-->
         <!--[if !mso]><!-->
-        <a href="${esc(url)}" target="_blank" style="display:inline-block;width:300px;line-height:48px;background-color:#C1272D;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none;border-radius:3px;-webkit-text-size-adjust:none;mso-hide:all;">${label}</a>
+        <a href="${esc(url)}" target="_blank" style="display:inline-block;width:300px;line-height:48px;background-color:#C1272D;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-align:center;text-decoration:none;border-radius:3px;-webkit-text-size-adjust:none;">${label}</a>
         <!--<![endif]-->`;
 
   const html = `<!doctype html>
-<html lang="fr">
+<html lang="fr" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(subject)}</title>
+<!--[if mso]>
+<xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+<style>table { border-collapse:collapse; } td { font-family:Arial,Helvetica,sans-serif; }</style>
+<![endif]-->
 </head>
-<body style="margin:0;padding:0;background-color:#F2EEE8;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2EEE8;">
-<tr><td align="center" style="padding:36px 14px;">
+<body bgcolor="#F2EEE8" style="margin:0;padding:0;background-color:#F2EEE8;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<table id="sbc-email-root" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2EEE8" style="width:100%;background-color:#F2EEE8;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+<tr><td align="center" valign="top" style="padding:36px 14px;">
 
-<table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;width:100%;background-color:#FFFFFF;border:1px solid #E7E2DB;border-radius:8px;overflow:hidden;">
+<!--[if mso]><table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:100%;max-width:620px;background-color:#FFFFFF;border:1px solid #E7E2DB;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 
-  <tr><td style="background-color:#161514;padding:26px 40px;">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+  <tr><td bgcolor="#161514" style="background-color:#161514;padding:26px 40px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr>
       <td width="52" valign="middle">
         <img src="${esc(logoUrl)}" width="52" height="52" alt="SLUC Business Club Nancy" style="display:block;border-radius:6px;background-color:#FFFFFF;">
       </td>
@@ -108,17 +118,17 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   </td></tr>
 
   <tr><td style="padding:40px 40px 12px;">
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#C1272D;font-weight:bold;padding-bottom:18px;">Invitation &middot; Rencontre</div>
-    ${t.greeting ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;color:#1B1B1B;padding-bottom:14px;">${escML(t.greeting)}</div>` : ''}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="padding-bottom:18px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:14px;letter-spacing:2.5px;text-transform:uppercase;color:#C1272D;font-weight:bold;">Invitation &middot; Rencontre</td></tr></table>
+    ${t.greeting ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="padding-bottom:14px;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:23px;color:#1B1B1B;">${escML(t.greeting)}</td></tr></table>` : ''}
     ${para(t.intro, 'padding-bottom:26px;')}
   </td></tr>
 
   <tr><td style="padding:0 40px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FAF8F5;border:1px solid #E7E2DB;border-left:3px solid #C1272D;border-radius:4px;">
-      <tr><td style="padding:26px 28px;">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;color:#1B1B1B;padding-bottom:12px;">${esc(r.titre)}</div>
-        ${r.description ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14.5px;line-height:1.65;color:#5A544E;padding-bottom:16px;">${esc(r.description)}</div>` : ''}
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FAF8F5" style="width:100%;background-color:#FAF8F5;border:1px solid #E7E2DB;border-left:3px solid #C1272D;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
+      <tr><td bgcolor="#FAF8F5" style="padding:26px 28px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="padding-bottom:12px;font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:29px;color:#1B1B1B;">${esc(r.titre)}</td></tr></table>
+        ${r.description ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="padding-bottom:16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:23px;mso-line-height-rule:exactly;color:#5A544E;">${esc(r.description)}</td></tr></table>` : ''}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr>
           <td style="border-top:1px solid #E7E2DB;padding-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#5A544E;line-height:1.9;">
             ${infoLines.join('<br>')}
           </td>
@@ -128,30 +138,31 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   </td></tr>
 
   <tr><td style="padding:6px 40px 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr>
       <td align="center" style="padding:28px 0 0;">
         ${ctaButton(inscriptionUrl, "Je m'inscris &agrave; la rencontre")}
       </td>
     </tr></table>
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9A938B;text-align:center;padding-top:14px;line-height:1.6;">R&eacute;serv&eacute; aux membres &agrave; jour de leur adh&eacute;sion pour la saison en cours.</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td align="center" style="padding-top:14px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:19px;color:#9A938B;">R&eacute;serv&eacute; aux membres &agrave; jour de leur adh&eacute;sion pour la saison en cours.</td></tr></table>
   </td></tr>
 
   <tr><td style="padding:28px 40px 38px;">
     ${para(t.outro, t.signature ? 'padding-bottom:24px;' : '')}
-    ${t.signature ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.6;color:#1B1B1B;">${escML(t.signature)}</div>` : ''}
+    ${t.signature ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:26px;color:#1B1B1B;">${escML(t.signature)}</td></tr></table>` : ''}
   </td></tr>
 
-  <tr><td style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:1.8;">
+  <tr><td bgcolor="#0F0E0D" style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:22px;">
     Business Club SLUC Nancy &middot; Palais des Sports Jean Weille, Nancy<br>
     <a href="mailto:contact@sluc-businessclub.fr" style="color:#E0777A;text-decoration:none;">contact@sluc-businessclub.fr</a>
   </td></tr>
 
 </table>
 
-<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9A938B;padding-top:18px;max-width:620px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:620px;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr><td style="padding-top:18px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;color:#9A938B;">
   Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br>
   <a href="${esc(inscriptionUrl)}" style="color:#C1272D;text-decoration:underline;word-break:break-all;">${esc(inscriptionUrl)}</a>
-</div>
+</td></tr></table>
+<!--[if mso]></td></tr></table><![endif]-->
 
 </td></tr>
 </table>

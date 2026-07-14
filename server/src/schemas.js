@@ -27,10 +27,7 @@ export const demandeSchema = z.object({
 });
 
 export const inscriptionPublicSchema = z.object({
-  nom: trimmed(120, 1),
-  entreprise: trimmed(120, 1),
-  email: trimmed(254, 3).email(),
-  tel: trimmed(30).optional().default(''),
+  participants: z.array(trimmed(120, 1)).min(1).max(100),
 });
 
 export const memberProfileSchema = z.object({
@@ -55,6 +52,7 @@ export const rencontreSchema = z.object({
   lieu: trimmed(200).optional().default(''),
   description: trimmed(2000).optional().default(''),
   places: z.coerce.number().int().min(0).max(100000),
+  participants_par_compte: z.coerce.number().int().min(1).max(100).optional().default(1),
 });
 
 export const inscriptionAdminSchema = z.object({

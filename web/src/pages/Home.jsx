@@ -1,27 +1,63 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePublicData } from '../lib/usePublic.js';
+import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
 import PastEventCard from '../components/PastEventCard.jsx';
 
 function InscriptionModal({ rencontre, onClose, onDone }) {
-  const [form, setForm] = useState({ nom: '', entreprise: '', email: '', tel: '' });
+  const { user, login } = useAuth();
+  const [context, setContext] = useState(null);
+  const [participants, setParticipants] = useState(['']);
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const { jour, mois } = dateParts(rencontre.date_renc);
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  useEffect(() => {
+    if (user?.role !== 'member' || user.mustChangePassword) return;
+    setError('');
+    api.get(`/api/public/rencontres/${rencontre.id}/inscription`)
+      .then((d) => {
+        setContext(d);
+        setParticipants(d.participants.length ? d.participants.map((p) => p.nom) : [d.member.dirigeant || '']);
+      })
+      .catch((err) => setError(err.message));
+  }, [user, rencontre.id]);
+
+  const submitLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await login(credentials.email, credentials.password);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changeParticipant = (index, value) => {
+    setParticipants((current) => current.map((name, i) => (i === index ? value : name)));
+  };
+
+  const maxPerAccount = context?.rencontre.participants_par_compte || rencontre.participants_par_compte || 1;
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+    setBusy(true);
     try {
-      await api.post(`/api/public/rencontres/${rencontre.id}/inscriptions`, form);
+      await api.post(`/api/public/rencontres/${rencontre.id}/inscriptions`, { participants });
       setDone(true);
       onDone?.();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -35,7 +71,7 @@ function InscriptionModal({ rencontre, onClose, onDone }) {
             Votre demande pour <strong>{rencontre.titre}</strong> est bien enregistrée.
           </p>
           <p style={{ fontSize: 13.5, color: 'var(--gray-light)', marginBottom: 26 }}>
-            Elle sera confirmée par l'équipe du Club.
+            {participants.length} participant{participants.length > 1 ? 's' : ''} — confirmation par l'équipe du Club.
           </p>
           <button className="btn btn-dark btn-sm" style={{ padding: '13px 28px', fontSize: 14 }} onClick={onClose}>Fermer</button>
         </div>
@@ -49,26 +85,74 @@ function InscriptionModal({ rencontre, onClose, onDone }) {
       maxWidth={460}
       header={{ kicker: 'Inscription', title: rencontre.titre, meta: `${jour} ${mois} · ${rencontre.heure} · ${rencontre.lieu}` }}
     >
-      <form onSubmit={submit} style={{ padding: '28px 30px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <label className="field-plain">Nom & prénom
-            <input name="nom" value={form.nom} onChange={onChange} required maxLength={120} />
-          </label>
-          <label className="field-plain">Entreprise
-            <input name="entreprise" value={form.entreprise} onChange={onChange} required maxLength={120} />
-          </label>
-          <label className="field-plain">Email
-            <input name="email" type="email" value={form.email} onChange={onChange} required maxLength={254} />
-          </label>
+      {!user && (
+        <form onSubmit={submitLogin} style={{ padding: '28px 30px' }}>
+          <p style={{ fontSize: 14, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 18 }}>
+            Connectez-vous avec votre compte membre avant de choisir les participants.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <label className="field-plain">Email du compte
+              <input type="email" value={credentials.email} onChange={(e) => setCredentials({ ...credentials, email: e.target.value })} required autoComplete="username" />
+            </label>
+            <label className="field-plain">Mot de passe
+              <input type="password" value={credentials.password} onChange={(e) => setCredentials({ ...credentials, password: e.target.value })} required autoComplete="current-password" />
+            </label>
+          </div>
+          {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
+          <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 22, padding: 14 }} disabled={busy}>
+            {busy ? 'Connexion…' : 'Se connecter et continuer'}
+          </button>
+        </form>
+      )}
+
+      {user && (user.role !== 'member' || user.mustChangePassword) && (
+        <div style={{ padding: '30px' }}>
+          <p className="error-text">
+            {user.role !== 'member'
+              ? 'Les inscriptions doivent être effectuées avec un compte membre.'
+              : 'Vous devez d’abord remplacer votre mot de passe temporaire.'}
+          </p>
+          <Link to="/espace-membre" className="btn btn-dark" style={{ display: 'block', textAlign: 'center', marginTop: 20, textDecoration: 'none' }}>
+            Ouvrir mon espace membre
+          </Link>
         </div>
-        {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
-        <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 22, padding: 14 }}>
-          Confirmer mon inscription
-        </button>
-        <p style={{ fontSize: 12, color: 'var(--gray-light)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
-          Réservé aux membres à jour de leur adhésion pour la saison en cours.
-        </p>
-      </form>
+      )}
+
+      {user?.role === 'member' && !user.mustChangePassword && !context && (
+        <p style={{ padding: '30px', color: 'var(--gray-light)' }}>{error || 'Chargement de votre compte…'}</p>
+      )}
+
+      {user?.role === 'member' && !user.mustChangePassword && context && (
+        <form onSubmit={submit} style={{ padding: '28px 30px' }}>
+          <div style={{ background: 'var(--beige)', padding: '12px 14px', borderRadius: 4, fontSize: 13, color: 'var(--gray)', marginBottom: 18 }}>
+            Compte : <strong>{context.member.nom}</strong> · maximum {maxPerAccount} participant{maxPerAccount > 1 ? 's' : ''}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {participants.map((name, index) => (
+              <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <label className="field-plain" style={{ flex: 1 }}>Participant {index + 1} — nom & prénom
+                  <input value={name} onChange={(e) => changeParticipant(index, e.target.value)} required maxLength={120} />
+                </label>
+                {participants.length > 1 && (
+                  <button type="button" className="btn btn-outline-soft btn-sm" style={{ padding: '11px 13px' }} onClick={() => setParticipants((current) => current.filter((_, i) => i !== index))} aria-label={`Retirer le participant ${index + 1}`}>×</button>
+                )}
+              </div>
+            ))}
+          </div>
+          {participants.length < maxPerAccount && (
+            <button type="button" className="btn-link" style={{ marginTop: 14 }} onClick={() => setParticipants((current) => [...current, ''])}>
+              + Ajouter un participant
+            </button>
+          )}
+          {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
+          <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 22, padding: 14 }} disabled={busy}>
+            {busy ? 'Enregistrement…' : `Enregistrer ${participants.length} participant${participants.length > 1 ? 's' : ''}`}
+          </button>
+          <p style={{ fontSize: 12, color: 'var(--gray-light)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+            Vous pourrez rouvrir ce formulaire pour modifier les noms enregistrés.
+          </p>
+        </form>
+      )}
     </Modal>
   );
 }
@@ -251,6 +335,9 @@ export default function Home() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>
                     <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600 }}>
                       {restantes > 0 ? `${restantes} places restantes` : 'Complet'}
+                      <small style={{ display: 'block', color: 'var(--gray-light)', fontWeight: 400, marginTop: 3 }}>
+                        Max. {e.participants_par_compte} par compte
+                      </small>
                     </span>
                     <button className="btn btn-dark btn-sm" style={{ fontSize: 13.5 }} disabled={restantes === 0} onClick={() => setInscrRenc(e)}>
                       S'inscrire
@@ -344,7 +431,7 @@ export default function Home() {
       </section>
 
       {inscrRenc && (
-        <InscriptionModal rencontre={inscrRenc} onClose={closeInscription} onDone={reload} />
+        <InscriptionModal key={inscrRenc.id} rencontre={inscrRenc} onClose={closeInscription} onDone={reload} />
       )}
     </main>
   );
