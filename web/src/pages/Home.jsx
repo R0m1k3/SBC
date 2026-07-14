@@ -380,7 +380,7 @@ export default function Home() {
               Rejoignez un réseau de 85 dirigeants, accédez à toutes nos rencontres et bénéficiez d'une visibilité au cœur du SLUC Nancy.
             </p>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {['Accès à toutes les rencontres business', 'Places privilégiées aux matchs', "Présence dans l'annuaire des membres"].map((t) => (
+              {['Accès à toutes les rencontres business', "Présence dans l'annuaire des membres"].map((t) => (
                 <li key={t} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 15, color: '#E7E1D9' }}>
                   <span style={{ color: 'var(--red-soft)', fontWeight: 700 }}>—</span>{t}
                 </li>
