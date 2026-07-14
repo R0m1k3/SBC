@@ -364,7 +364,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 34 }}>
             {passees.slice(0, 3).map((p) => (
-              <PastEventCard key={p.id} event={p} />
+              <PastEventCard key={p.id} event={p} excerptLines={3} />
             ))}
           </div>
         </div>
