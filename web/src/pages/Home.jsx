@@ -5,6 +5,7 @@ import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
 import PastEventCard from '../components/PastEventCard.jsx';
+import { AdhesionForm, AdhesionModal } from '../components/AdhesionForm.jsx';
 
 export function InscriptionModal({ rencontre, onClose, onDone }) {
   const { user, login } = useAuth();
@@ -161,9 +162,7 @@ export default function Home() {
   const { data, reload } = usePublicData();
   const [searchParams, setSearchParams] = useSearchParams();
   const [inscrRenc, setInscrRenc] = useState(null);
-  const [homeDone, setHomeDone] = useState(false);
-  const [homeError, setHomeError] = useState('');
-  const [form, setForm] = useState({ nom: '', fonction: '', entreprise: '', email: '' });
+  const [adhesionOpen, setAdhesionOpen] = useState(false);
 
   // Registration links in invitation emails point to /?inscription=<id> :
   // once the public data is loaded, open the matching inscription modal.
@@ -174,21 +173,21 @@ export default function Home() {
     if (renc) setInscrRenc(renc);
   }, [data, searchParams]);
 
+  useEffect(() => {
+    if (searchParams.has('adhesion')) setAdhesionOpen(true);
+  }, [searchParams]);
+
   const closeInscription = () => {
     setInscrRenc(null);
     if (searchParams.has('inscription')) setSearchParams({}, { replace: true });
   };
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const submitHome = async (e) => {
-    e.preventDefault();
-    setHomeError('');
-    try {
-      await api.post('/api/public/demandes-adhesion', form);
-      setHomeDone(true);
-    } catch (err) {
-      setHomeError(err.message);
+  const closeAdhesion = () => {
+    setAdhesionOpen(false);
+    if (searchParams.has('adhesion')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('adhesion');
+      setSearchParams(next, { replace: true });
     }
   };
 
@@ -212,9 +211,7 @@ export default function Home() {
             de haut niveau : performance, engagement et esprit collectif.
           </p>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            <a href="#adhesion" style={{ textDecoration: 'none' }}>
-              <button className="btn btn-red">Rejoindre le club</button>
-            </a>
+            <button className="btn btn-red" onClick={() => setAdhesionOpen(true)}>Rejoindre le club</button>
             <Link to="/association" style={{ textDecoration: 'none' }}>
               <button className="btn btn-outline">Découvrir l'association</button>
             </Link>
@@ -390,42 +387,7 @@ export default function Home() {
             </ul>
           </div>
           <div style={{ background: '#fff', color: 'var(--ink)', borderRadius: 6, padding: 38 }}>
-            {homeDone ? (
-              <div style={{ textAlign: 'center', padding: '30px 10px' }}>
-                <div style={{ width: 58, height: 58, borderRadius: '50%', background: '#FBEDEC', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 20px' }}>✓</div>
-                <h3 className="serif" style={{ fontSize: 26, fontWeight: 600, marginBottom: 10 }}>Demande envoyée !</h3>
-                <p style={{ fontSize: 15, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 24 }}>
-                  Merci pour votre intérêt. Notre équipe vous recontacte sous 48h.
-                </p>
-                <button className="btn btn-outline btn-sm" style={{ fontSize: 14, padding: '12px 24px' }} onClick={() => { setHomeDone(false); setForm({ nom: '', fonction: '', entreprise: '', email: '' }); }}>
-                  Nouvelle demande
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={submitHome}>
-                <h3 className="serif" style={{ fontSize: 24, fontWeight: 600, marginBottom: 22 }}>Demande d'adhésion</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <label className="field-plain">Nom & prénom
-                      <input name="nom" value={form.nom} onChange={onChange} required maxLength={120} />
-                    </label>
-                    <label className="field-plain">Fonction
-                      <input name="fonction" value={form.fonction} onChange={onChange} maxLength={120} />
-                    </label>
-                  </div>
-                  <label className="field-plain">Entreprise
-                    <input name="entreprise" value={form.entreprise} onChange={onChange} required maxLength={120} />
-                  </label>
-                  <label className="field-plain">Email professionnel
-                    <input name="email" type="email" value={form.email} onChange={onChange} required maxLength={254} />
-                  </label>
-                </div>
-                {homeError && <p className="error-text" style={{ marginTop: 12 }}>{homeError}</p>}
-                <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 24, padding: 15 }}>
-                  Envoyer ma demande
-                </button>
-              </form>
-            )}
+            <AdhesionForm />
           </div>
         </div>
       </section>
@@ -433,6 +395,7 @@ export default function Home() {
       {inscrRenc && (
         <InscriptionModal key={inscrRenc.id} rencontre={inscrRenc} onClose={closeInscription} onDone={reload} />
       )}
+      {adhesionOpen && <AdhesionModal onClose={closeAdhesion} />}
     </main>
   );
 }

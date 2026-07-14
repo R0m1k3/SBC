@@ -135,9 +135,11 @@ CREATE TABLE IF NOT EXISTS demandes_adhesion (
     fonction   TEXT NOT NULL DEFAULT '' CHECK (char_length(fonction) <= 120),
     entreprise TEXT NOT NULL CHECK (char_length(entreprise) BETWEEN 1 AND 120),
     email      CITEXT NOT NULL CHECK (char_length(email) <= 254),
+    tel        TEXT CHECK (char_length(tel) <= 30),
     statut     TEXT NOT NULL DEFAULT 'nouvelle' CHECK (statut IN ('nouvelle', 'traitee')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE demandes_adhesion ADD COLUMN IF NOT EXISTS tel TEXT CHECK (char_length(tel) <= 30);
 
 CREATE TABLE IF NOT EXISTS site_content (
     key   TEXT PRIMARY KEY,

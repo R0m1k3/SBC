@@ -30,7 +30,7 @@ export default function Header() {
           <NavLink to="/rencontres-passees" className={navLinkClass}>Rencontres passées</NavLink>
           <NavLink to="/association" className={navLinkClass}>L'association</NavLink>
           <NavLink to="/espace-membre" className={navLinkClass}>Espace membre</NavLink>
-          <Link to="/" style={{ marginLeft: 10, textDecoration: 'none' }}>
+          <Link to="/?adhesion=1" style={{ marginLeft: 10, textDecoration: 'none' }}>
             <button className="btn btn-red" style={{ padding: '12px 22px', fontSize: 14 }}>Devenir membre</button>
           </Link>
         </nav>

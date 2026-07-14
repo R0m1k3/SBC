@@ -24,6 +24,7 @@ export const demandeSchema = z.object({
   fonction: trimmed(120).optional().default(''),
   entreprise: trimmed(120, 1),
   email: trimmed(254, 3).email(),
+  tel: trimmed(30, 6),
 });
 
 export const inscriptionPublicSchema = z.object({

@@ -83,10 +83,10 @@ publicRouter.post(
   validate(demandeSchema),
   async (req, res, next) => {
     try {
-      const { nom, fonction, entreprise, email } = req.data;
+      const { nom, fonction, entreprise, email, tel } = req.data;
       await query(
-        'INSERT INTO demandes_adhesion (nom, fonction, entreprise, email) VALUES ($1, $2, $3, $4)',
-        [nom, fonction, entreprise, email]
+        'INSERT INTO demandes_adhesion (nom, fonction, entreprise, email, tel) VALUES ($1, $2, $3, $4, $5)',
+        [nom, fonction, entreprise, email, tel]
       );
       res.status(201).json({ ok: true });
     } catch (err) {
