@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api.js';
 import { copyRichEmail } from '../../lib/emailClipboard.js';
+import { downloadOutlookDraft } from '../../lib/outlookDraft.js';
 
 const INITIAL = {
   subject: 'Actualités du Business Club SLUC Nancy',
@@ -65,6 +66,16 @@ export function EmailCreatorTab() {
     }
   };
 
+  const downloadOutlook = () => {
+    const slug = form.subject.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'email';
+    downloadOutlookDraft({
+      subject: form.subject,
+      html: data.html,
+      filename: `${slug}-outlook.eml`,
+    });
+    flash('outlook');
+  };
+
   const download = () => {
     const blob = new Blob([data.html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -115,12 +126,13 @@ export function EmailCreatorTab() {
         </div>
         {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 20 }}>
-          <button className="btn btn-red" onClick={copyEmail} disabled={!data}>{copied === 'email' ? '✓ E-mail copié' : "Copier l'e-mail"}</button>
+          <button className="btn btn-red" onClick={downloadOutlook} disabled={!data}>{copied === 'outlook' ? '✓ Brouillon téléchargé' : 'Télécharger le brouillon Outlook'}</button>
+          <button className="btn btn-outline-soft btn-sm" style={{ padding: 12 }} onClick={copyEmail} disabled={!data}>{copied === 'email' ? '✓ E-mail copié' : "Copier l'e-mail (autres logiciels)"}</button>
           <button className="btn btn-outline-soft btn-sm" style={{ padding: 12 }} onClick={copySubject}>{copied === 'subject' ? '✓ Objet copié' : "Copier l'objet"}</button>
           <button className="btn btn-outline-soft btn-sm" style={{ padding: 12 }} onClick={download} disabled={!data}>Télécharger le HTML</button>
         </div>
         <p style={{ fontSize: 11.5, color: 'var(--gray-light)', lineHeight: 1.5, marginTop: 14 }}>
-          Dans un brouillon Outlook, utilisez Ctrl + clic pour tester un lien. Après envoi, un clic normal suffit.
+          Pour Outlook, ouvrez le fichier .eml téléchargé : le mail est chargé comme un vrai brouillon HTML, sans collage ni remplacement des styles. Dans le brouillon, utilisez Ctrl + clic pour tester un lien.
         </p>
       </div>
 

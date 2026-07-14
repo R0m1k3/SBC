@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, dateParts, seasonLabel, statutLabel } from '../../lib/api.js';
 import { copyRichEmail } from '../../lib/emailClipboard.js';
+import { downloadOutlookDraft } from '../../lib/outlookDraft.js';
 import { useAuth } from '../../lib/AuthContext.jsx';
 import Modal from '../Modal.jsx';
 import ImageSlot from '../ImageSlot.jsx';
@@ -392,6 +393,16 @@ function EmailModal({ renc, onClose }) {
     }
   };
 
+  const downloadOutlook = () => {
+    const slug = renc.titre.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+    downloadOutlookDraft({
+      subject: data.subject,
+      html: data.html,
+      filename: `invitation-${slug}-outlook.eml`,
+    });
+    flash('outlook');
+  };
+
   const download = () => {
     const blob = new Blob([data.html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -429,8 +440,11 @@ function EmailModal({ renc, onClose }) {
               automatiquement. Videz un champ pour retirer ce bloc de l'email.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
-              <button className="btn btn-red btn-sm" style={{ fontSize: 13.5, padding: '12px 18px' }} onClick={copyEmail}>
-                {copied === 'email' ? '✓ Copié' : "Copier l'email"}
+              <button className="btn btn-red btn-sm" style={{ fontSize: 13.5, padding: '12px 18px' }} onClick={downloadOutlook}>
+                {copied === 'outlook' ? '✓ Brouillon téléchargé' : 'Télécharger le brouillon Outlook'}
+              </button>
+              <button className="btn btn-outline-soft btn-sm" style={{ fontSize: 13, padding: '11px 18px' }} onClick={copyEmail}>
+                {copied === 'email' ? '✓ Copié' : "Copier l'email (autres logiciels)"}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-sm" style={{ flex: 1, background: 'var(--admin-bg)', fontSize: 13, padding: '11px 10px' }} onClick={() => copyText(data.subject, 'subject')}>
@@ -445,8 +459,7 @@ function EmailModal({ renc, onClose }) {
               </button>
             </div>
             <p style={{ fontSize: 12, color: 'var(--gray-light)', lineHeight: 1.55 }}>
-              Collez l'email directement dans votre logiciel de messagerie (« Copier l'email »
-              conserve la mise en forme), ou envoyez le fichier .html avec votre outil d'emailing.
+              Pour Outlook, ouvrez le fichier .eml téléchargé : il charge directement le vrai corps HTML sans passer par le presse-papiers. La copie reste disponible pour les autres logiciels de messagerie.
             </p>
           </div>
           <div>
