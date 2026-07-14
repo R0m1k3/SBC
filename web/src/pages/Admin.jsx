@@ -6,6 +6,7 @@ import { MembersTab, RencontresTab, InscriptionsTab } from '../components/admin/
 import { CategoriesTab, ContenuTab } from '../components/admin/AdminContent.jsx';
 import { PastEventsTab } from '../components/admin/AdminPast.jsx';
 import { UsersTab } from '../components/admin/AdminUsers.jsx';
+import { EmailCreatorTab } from '../components/admin/AdminEmail.jsx';
 
 // Moderators only get members/rencontres/inscriptions/rencontres passées
 // (create + edit, never delete) — everything else (dashboard, taxonomy,
@@ -19,6 +20,7 @@ const TABS = [
   { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator'] },
   { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
   { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
+  { key: 'emails', icon: '✉', label: "Créateur d'e-mail", title: "Créateur d'e-mail", roles: ['admin'] },
   { key: 'utilisateurs', icon: '⚿', label: 'Administrateurs', title: 'Administrateurs & modérateurs', roles: ['admin'] },
 ];
 
@@ -150,6 +152,7 @@ export function AdminShell() {
           {tab === 'inscriptions' && <InscriptionsTab />}
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'contenu' && <ContenuTab />}
+          {tab === 'emails' && <EmailCreatorTab />}
           {tab === 'utilisateurs' && <UsersTab />}
         </div>
       </div>

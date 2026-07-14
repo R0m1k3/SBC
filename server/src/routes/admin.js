@@ -13,6 +13,7 @@ import {
   rencontrePasseeSchema,
   pastPhotoParam,
   emailComposeSchema,
+  customEmailSchema,
   idParam,
 } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
@@ -20,6 +21,7 @@ import { ensureMemberAccess } from '../memberAccess.js';
 import { createStaffUser, resetStaffAccess } from '../userAccess.js';
 import { AccessError } from '../errors.js';
 import { buildInvitationEmail } from '../emailTemplate.js';
+import { buildCustomEmail } from '../customEmailTemplate.js';
 
 export const adminRouter = Router();
 
@@ -265,6 +267,21 @@ adminRouter.get('/rencontres/:id/inscriptions', validate(idParam, 'params'), asy
   try {
     const result = await query(`${INSCR_SQL} WHERE i.rencontre_id = $1 ORDER BY i.nom`, [req.params.id]);
     res.json({ inscriptions: result.rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// General-purpose branded email composer, reserved to administrators.
+adminRouter.post('/emails/preview', adminOnly, validate(customEmailSchema), async (req, res, next) => {
+  try {
+    const { base, ...content } = req.data;
+    let baseUrl = `${req.protocol}://${req.get('host')}`;
+    if (base) {
+      const parsed = new URL(base);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') baseUrl = parsed.origin;
+    }
+    res.json(buildCustomEmail({ content, baseUrl }));
   } catch (err) {
     next(err);
   }

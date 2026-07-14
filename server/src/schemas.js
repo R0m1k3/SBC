@@ -105,3 +105,17 @@ export const emailComposeSchema = z.object({
   outro: z.string().trim().max(2000).optional(),
   signature: z.string().trim().max(500).optional(),
 });
+
+export const customEmailSchema = z.object({
+  base: z.string().trim().url().max(300).optional(),
+  subject: trimmed(200, 1),
+  kicker: trimmed(120).optional().default(''),
+  title: trimmed(200, 1),
+  body: trimmed(6000, 1),
+  buttonLabel: trimmed(100).optional().default(''),
+  buttonUrl: z.string().trim().url().max(500).or(z.literal('')).optional().default(''),
+  signature: trimmed(500).optional().default(''),
+}).refine((data) => Boolean(data.buttonLabel) === Boolean(data.buttonUrl), {
+  message: 'le texte et le lien du bouton doivent être renseignés ensemble',
+  path: ['buttonUrl'],
+});
