@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, dateParts, seasonLabel, statutLabel } from '../../lib/api.js';
 import { useAuth } from '../../lib/AuthContext.jsx';
 import Modal from '../Modal.jsx';
@@ -316,23 +316,52 @@ function escHtml(v) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Preview + export of the ready-to-send HTML invitation email generated
-// server-side for one rencontre. "Copier l'email" puts the rendered HTML
-// on the clipboard (rich text where supported, so pasting into a mail
-// client keeps the design); the .html download covers the rest.
+// Composer + preview of the ready-to-send HTML invitation email generated
+// server-side for one rencontre. Every text zone (salutation, intro,
+// conclusion, signature) is editable — the preview regenerates as the
+// admin types; clearing a zone removes its block from the email.
+// "Copier l'email" puts the rendered HTML on the clipboard (rich text
+// where supported, so pasting into a mail client keeps the design); the
+// .html download covers the rest.
 function EmailModal({ renc, onClose }) {
-  const [data, setData] = useState(null);
+  const [texts, setTexts] = useState(null); // editable zones, prefilled by the server
+  const [data, setData] = useState(null); // { subject, html, inscriptionUrl }
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
+  const skipRegen = useRef(true);
+
+  const generate = (t) =>
+    api.post(`/api/admin/rencontres/${renc.id}/email`, {
+      // The browser knows the site's real public origin (scheme included) —
+      // the server can't always tell behind a reverse proxy.
+      base: window.location.origin,
+      ...(t || {}),
+    });
 
   useEffect(() => {
-    // The browser knows the site's real public origin (scheme included) —
-    // the server can't always tell behind a reverse proxy.
-    api
-      .get(`/api/admin/rencontres/${renc.id}/email?base=${encodeURIComponent(window.location.origin)}`)
-      .then(setData)
+    generate(null)
+      .then((d) => {
+        setData(d);
+        skipRegen.current = true;
+        setTexts(d.texts);
+      })
       .catch((e) => setError(e.message));
   }, [renc.id]);
+
+  // Regenerate the preview as the admin edits, debounced.
+  useEffect(() => {
+    if (!texts) return;
+    if (skipRegen.current) {
+      skipRegen.current = false;
+      return;
+    }
+    const id = setTimeout(() => {
+      generate(texts).then(setData).catch((e) => setError(e.message));
+    }, 450);
+    return () => clearTimeout(id);
+  }, [texts]);
+
+  const onText = (e) => setTexts({ ...texts, [e.target.name]: e.target.value });
 
   const flash = (what) => {
     setCopied(what);
@@ -382,35 +411,58 @@ function EmailModal({ renc, onClose }) {
   };
 
   return (
-    <Modal onClose={onClose} maxWidth={760} header={{ kicker: "Email d'invitation", title: renc.titre }}>
+    <Modal onClose={onClose} maxWidth={1000} header={{ kicker: "Email d'invitation", title: renc.titre }}>
       {!data && !error && <p style={{ padding: '30px 32px', color: 'var(--gray-light)' }}>Génération de l'email…</p>}
       {error && <p className="error-text" style={{ padding: '20px 32px 0' }}>{error}</p>}
-      {data && (
-        <>
-          <div style={{ padding: '18px 32px 0', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button className="btn btn-red btn-sm" style={{ fontSize: 13.5, padding: '11px 18px' }} onClick={copyEmail}>
-              {copied === 'email' ? '✓ Copié' : "Copier l'email"}
-            </button>
-            <button className="btn btn-sm" style={{ background: 'var(--admin-bg)', fontSize: 13.5, padding: '11px 18px' }} onClick={() => copyText(data.subject, 'subject')}>
-              {copied === 'subject' ? '✓ Copié' : "Copier l'objet"}
-            </button>
-            <button className="btn btn-sm" style={{ background: 'var(--admin-bg)', fontSize: 13.5, padding: '11px 18px' }} onClick={() => copyText(data.inscriptionUrl, 'link')}>
-              {copied === 'link' ? '✓ Copié' : "Copier le lien d'inscription"}
-            </button>
-            <button className="btn btn-outline-soft btn-sm" style={{ fontSize: 13.5, padding: '11px 18px' }} onClick={download}>
-              ↓ Télécharger (.html)
-            </button>
+      {data && texts && (
+        <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 26, padding: '24px 32px 30px', alignItems: 'start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <label className="field">Salutation
+              <input name="greeting" value={texts.greeting} onChange={onText} maxLength={300} />
+            </label>
+            <label className="field">Message d'introduction
+              <textarea name="intro" value={texts.intro} onChange={onText} rows={4} maxLength={2000} />
+            </label>
+            <label className="field">Message de conclusion
+              <textarea name="outro" value={texts.outro} onChange={onText} rows={4} maxLength={2000} />
+            </label>
+            <label className="field">Signature
+              <textarea name="signature" value={texts.signature} onChange={onText} rows={2} maxLength={500} />
+            </label>
+            <p style={{ fontSize: 12, color: 'var(--gray-light)', lineHeight: 1.55 }}>
+              Les détails de la rencontre (titre, description, date, lieu, places) sont repris
+              automatiquement. Videz un champ pour retirer ce bloc de l'email.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+              <button className="btn btn-red btn-sm" style={{ fontSize: 13.5, padding: '12px 18px' }} onClick={copyEmail}>
+                {copied === 'email' ? '✓ Copié' : "Copier l'email"}
+              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-sm" style={{ flex: 1, background: 'var(--admin-bg)', fontSize: 13, padding: '11px 10px' }} onClick={() => copyText(data.subject, 'subject')}>
+                  {copied === 'subject' ? '✓ Copié' : "Copier l'objet"}
+                </button>
+                <button className="btn btn-sm" style={{ flex: 1, background: 'var(--admin-bg)', fontSize: 13, padding: '11px 10px' }} onClick={() => copyText(data.inscriptionUrl, 'link')}>
+                  {copied === 'link' ? '✓ Copié' : 'Copier le lien'}
+                </button>
+              </div>
+              <button className="btn btn-outline-soft btn-sm" style={{ fontSize: 13, padding: '11px 18px' }} onClick={download}>
+                ↓ Télécharger (.html)
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--gray-light)', lineHeight: 1.55 }}>
+              Collez l'email directement dans votre logiciel de messagerie (« Copier l'email »
+              conserve la mise en forme), ou envoyez le fichier .html avec votre outil d'emailing.
+            </p>
           </div>
-          <div style={{ padding: '14px 32px 6px', fontSize: 12.5, color: 'var(--gray-light)', lineHeight: 1.55 }}>
-            <strong style={{ color: 'var(--gray)' }}>Objet :</strong> {data.subject}
-            <br />
-            Collez l'email directement dans votre logiciel de messagerie (le bouton « Copier l'email »
-            conserve la mise en forme), ou envoyez le fichier .html avec votre outil d'emailing.
+          <div>
+            <div style={{ fontSize: 12.5, color: 'var(--gray-light)', marginBottom: 10 }}>
+              <strong style={{ color: 'var(--gray)' }}>Objet :</strong> {data.subject}
+            </div>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+              <iframe title="Aperçu de l'email" srcDoc={data.html} sandbox="" style={{ display: 'block', width: '100%', height: 560, border: 'none', background: '#F2EEE8' }} />
+            </div>
           </div>
-          <div style={{ margin: '14px 32px 30px', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
-            <iframe title="Aperçu de l'email" srcDoc={data.html} sandbox="" style={{ display: 'block', width: '100%', height: 480, border: 'none', background: '#F2EEE8' }} />
-          </div>
-        </>
+        </div>
       )}
     </Modal>
   );

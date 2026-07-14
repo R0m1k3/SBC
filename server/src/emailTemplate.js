@@ -10,8 +10,38 @@ function esc(v) {
     .replace(/"/g, '&quot;');
 }
 
-export function buildInvitationEmail({ rencontre, baseUrl }) {
+// Multi-line text zones (intro, outro, signature) keep their line breaks.
+function escML(v) {
+  return esc(v).replace(/\r?\n/g, '<br>');
+}
+
+// Default wording of each editable zone. The admin can rewrite any of
+// them in the composer; clearing a field removes the block entirely.
+export function defaultEmailTexts() {
+  return {
+    greeting: 'Chère membre, cher membre,',
+    intro:
+      "Nous avons le plaisir de vous convier à notre prochaine rencontre du Business Club. "
+      + "Networking, échanges et convivialité : nous vous attendons nombreux, dans l'esprit "
+      + "d'équipe qui fait la force du Club.",
+    outro:
+      "Les places sont limitées — pensez à vous inscrire dès maintenant. N'hésitez pas à "
+      + "transférer cette invitation à un dirigeant de votre réseau qui souhaiterait découvrir le Club.",
+    signature: "À très bientôt,\nL'équipe du Business Club SLUC Nancy",
+  };
+}
+
+export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   const r = rencontre;
+  const defaults = defaultEmailTexts();
+  // undefined -> default wording; '' (cleared by the admin) -> block hidden
+  const t = {
+    greeting: texts.greeting ?? defaults.greeting,
+    intro: texts.intro ?? defaults.intro,
+    outro: texts.outro ?? defaults.outro,
+    signature: texts.signature ?? defaults.signature,
+  };
+
   const dateStr = new Date(r.date_renc).toLocaleDateString('fr-FR', {
     weekday: 'long',
     day: 'numeric',
@@ -25,9 +55,16 @@ export function buildInvitationEmail({ rencontre, baseUrl }) {
 
   const infoLines = [
     `<strong style="color:#1B1B1B;">${esc(dateStr.charAt(0).toUpperCase() + dateStr.slice(1))}</strong>`,
-    [r.heure && esc(r.heure), esc(r.lieu)].filter(Boolean).join(' — '),
-    restantes > 0 ? `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}` : 'Complet — liste d’attente',
-  ];
+    [r.heure && esc(r.heure), esc(r.lieu)].filter(Boolean).join(' &mdash; '),
+    restantes > 0
+      ? `${restantes} place${restantes > 1 ? 's' : ''} restante${restantes > 1 ? 's' : ''}`
+      : 'Complet &mdash; liste d&rsquo;attente',
+  ].filter(Boolean);
+
+  const para = (text, extra = '') =>
+    text
+      ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.7;color:#5A544E;${extra}">${escML(text)}</div>`
+      : '';
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -40,9 +77,9 @@ export function buildInvitationEmail({ rencontre, baseUrl }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F2EEE8;">
 <tr><td align="center" style="padding:36px 14px;">
 
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border:1px solid #E7E2DB;border-radius:8px;overflow:hidden;">
+<table role="presentation" width="620" cellpadding="0" cellspacing="0" border="0" style="max-width:620px;width:100%;background-color:#FFFFFF;border:1px solid #E7E2DB;border-radius:8px;overflow:hidden;">
 
-  <tr><td style="background-color:#161514;padding:26px 36px;">
+  <tr><td style="background-color:#161514;padding:26px 40px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
       <td width="52" valign="middle">
         <img src="${esc(logoUrl)}" width="52" height="52" alt="SLUC Business Club Nancy" style="display:block;border-radius:6px;background-color:#FFFFFF;">
@@ -54,33 +91,48 @@ export function buildInvitationEmail({ rencontre, baseUrl }) {
     </tr></table>
   </td></tr>
 
-  <tr><td style="padding:40px 36px 32px;">
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#C1272D;font-weight:bold;padding-bottom:16px;">Invitation &middot; Rencontre</div>
-    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;color:#1B1B1B;padding-bottom:18px;">${esc(r.titre)}</div>
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#5A544E;padding-bottom:26px;">${esc(r.description)}</div>
+  <tr><td style="padding:40px 40px 12px;">
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#C1272D;font-weight:bold;padding-bottom:18px;">Invitation &middot; Rencontre</div>
+    ${t.greeting ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;color:#1B1B1B;padding-bottom:14px;">${escML(t.greeting)}</div>` : ''}
+    ${para(t.intro, 'padding-bottom:26px;')}
+  </td></tr>
 
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FAF8F5;border-left:3px solid #C1272D;">
-      <tr><td style="padding:18px 22px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#5A544E;line-height:1.9;">
-        ${infoLines.join('<br>')}
+  <tr><td style="padding:0 40px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FAF8F5;border:1px solid #E7E2DB;border-left:3px solid #C1272D;border-radius:4px;">
+      <tr><td style="padding:26px 28px;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.2;color:#1B1B1B;padding-bottom:12px;">${esc(r.titre)}</div>
+        ${r.description ? `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14.5px;line-height:1.65;color:#5A544E;padding-bottom:16px;">${esc(r.description)}</div>` : ''}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="border-top:1px solid #E7E2DB;padding-top:16px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#5A544E;line-height:1.9;">
+            ${infoLines.join('<br>')}
+          </td>
+        </tr></table>
       </td></tr>
     </table>
+  </td></tr>
 
+  <tr><td style="padding:6px 40px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td align="center" style="padding:30px 0 0;">
+      <td align="center" style="padding:28px 0 0;">
         <a href="${esc(inscriptionUrl)}" style="display:inline-block;background-color:#C1272D;color:#FFFFFF;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:15px 40px;border-radius:3px;">Je m'inscris &agrave; la rencontre</a>
       </td>
     </tr></table>
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9A938B;text-align:center;padding-top:16px;line-height:1.6;">R&eacute;serv&eacute; aux membres &agrave; jour de leur adh&eacute;sion pour la saison en cours.</div>
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#9A938B;text-align:center;padding-top:14px;line-height:1.6;">R&eacute;serv&eacute; aux membres &agrave; jour de leur adh&eacute;sion pour la saison en cours.</div>
   </td></tr>
 
-  <tr><td style="background-color:#0F0E0D;padding:24px 36px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:1.8;">
+  <tr><td style="padding:28px 40px 38px;">
+    ${para(t.outro, t.signature ? 'padding-bottom:24px;' : '')}
+    ${t.signature ? `<div style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.6;color:#1B1B1B;">${escML(t.signature)}</div>` : ''}
+  </td></tr>
+
+  <tr><td style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:1.8;">
     Business Club SLUC Nancy &middot; Palais des Sports Jean Weille, Nancy<br>
     <a href="mailto:contact@sluc-businessclub.fr" style="color:#E0777A;text-decoration:none;">contact@sluc-businessclub.fr</a>
   </td></tr>
 
 </table>
 
-<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9A938B;padding-top:18px;max-width:600px;">
+<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9A938B;padding-top:18px;max-width:620px;">
   Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br>
   <a href="${esc(inscriptionUrl)}" style="color:#C1272D;text-decoration:underline;word-break:break-all;">${esc(inscriptionUrl)}</a>
 </div>
@@ -90,5 +142,5 @@ export function buildInvitationEmail({ rencontre, baseUrl }) {
 </body>
 </html>`;
 
-  return { subject, html, inscriptionUrl };
+  return { subject, html, inscriptionUrl, texts: t };
 }

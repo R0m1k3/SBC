@@ -12,6 +12,7 @@ import {
   roleChangeSchema,
   rencontrePasseeSchema,
   pastPhotoParam,
+  emailComposeSchema,
   idParam,
 } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
@@ -230,25 +231,28 @@ adminRouter.post('/rencontres/:id/image', validate(idParam, 'params'), (req, res
 
 // Ready-to-send HTML invitation email for a rencontre (admin + moderator).
 // The registration link opens the public site with the inscription modal
-// pre-opened (/?inscription=<id>). URLs must be absolute for email
-// clients: the frontend passes its own window.location.origin (?base=),
-// which is exactly the public address the admin is browsing — reliable
-// even behind a TLS-terminating reverse proxy where req.protocol would
-// say "http". The request's host is only a fallback.
-adminRouter.get('/rencontres/:id/email', validate(idParam, 'params'), async (req, res, next) => {
+// pre-opened (/?inscription=<id>). The body carries the editable text
+// zones (greeting/intro/outro/signature — omitted = default wording,
+// empty = block hidden) plus `base`: URLs must be absolute for email
+// clients, and the frontend's window.location.origin is exactly the
+// public address the admin is browsing — reliable even behind a
+// TLS-terminating reverse proxy where req.protocol would say "http".
+// The request's host is only a fallback.
+adminRouter.post('/rencontres/:id/email', validate(idParam, 'params'), validate(emailComposeSchema), async (req, res, next) => {
   try {
     const result = await query(`${RENC_SQL} WHERE r.id = $1 GROUP BY r.id`, [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: 'Rencontre introuvable' });
+    const { base, ...texts } = req.data;
     let baseUrl = `${req.protocol}://${req.get('host')}`;
-    if (typeof req.query.base === 'string') {
+    if (base) {
       try {
-        const u = new URL(req.query.base);
+        const u = new URL(base);
         if (u.protocol === 'http:' || u.protocol === 'https:') baseUrl = u.origin;
       } catch {
-        // invalid ?base= — keep the fallback
+        // invalid base — keep the fallback
       }
     }
-    res.json(buildInvitationEmail({ rencontre: result.rows[0], baseUrl }));
+    res.json(buildInvitationEmail({ rencontre: result.rows[0], baseUrl, texts }));
   } catch (err) {
     next(err);
   }

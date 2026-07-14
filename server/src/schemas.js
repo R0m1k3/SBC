@@ -97,3 +97,13 @@ export const contentSchema = z.object({
   hero_quote_text: trimmed(300).optional(),
   hero_quote_author: trimmed(120).optional(),
 });
+
+// Invitation email composer: every text zone is optional — absent fields
+// fall back to the default wording, an empty string hides the block.
+export const emailComposeSchema = z.object({
+  base: z.string().trim().url().max(300).optional(),
+  greeting: z.string().trim().max(300).optional(),
+  intro: z.string().trim().max(2000).optional(),
+  outro: z.string().trim().max(2000).optional(),
+  signature: z.string().trim().max(500).optional(),
+});
