@@ -66,14 +66,19 @@ export function EmailCreatorTab() {
     }
   };
 
-  const downloadOutlook = () => {
+  const downloadOutlook = async () => {
     const slug = form.subject.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'email';
-    downloadOutlookDraft({
-      subject: form.subject,
-      html: data.html,
-      filename: `${slug}-outlook.eml`,
-    });
-    flash('outlook');
+    try {
+      setError('');
+      await downloadOutlookDraft({
+        subject: form.subject,
+        html: data.html,
+        filename: `${slug}-outlook.eml`,
+      });
+      flash('outlook');
+    } catch (err) {
+      setError(err.message || "Impossible de créer le brouillon Outlook.");
+    }
   };
 
   const download = () => {

@@ -393,14 +393,19 @@ function EmailModal({ renc, onClose }) {
     }
   };
 
-  const downloadOutlook = () => {
+  const downloadOutlook = async () => {
     const slug = renc.titre.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
-    downloadOutlookDraft({
-      subject: data.subject,
-      html: data.html,
-      filename: `invitation-${slug}-outlook.eml`,
-    });
-    flash('outlook');
+    try {
+      setError('');
+      await downloadOutlookDraft({
+        subject: data.subject,
+        html: data.html,
+        filename: `invitation-${slug}-outlook.eml`,
+      });
+      flash('outlook');
+    } catch (err) {
+      setError(err.message || "Impossible de créer le brouillon Outlook.");
+    }
   };
 
   const download = () => {
