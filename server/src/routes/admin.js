@@ -230,14 +230,24 @@ adminRouter.post('/rencontres/:id/image', validate(idParam, 'params'), (req, res
 
 // Ready-to-send HTML invitation email for a rencontre (admin + moderator).
 // The registration link opens the public site with the inscription modal
-// pre-opened (/?inscription=<id>). URLs are absolute, built from the
-// request's host so they match however the site is reached (direct port
-// or reverse proxy).
+// pre-opened (/?inscription=<id>). URLs must be absolute for email
+// clients: the frontend passes its own window.location.origin (?base=),
+// which is exactly the public address the admin is browsing — reliable
+// even behind a TLS-terminating reverse proxy where req.protocol would
+// say "http". The request's host is only a fallback.
 adminRouter.get('/rencontres/:id/email', validate(idParam, 'params'), async (req, res, next) => {
   try {
     const result = await query(`${RENC_SQL} WHERE r.id = $1 GROUP BY r.id`, [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: 'Rencontre introuvable' });
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    let baseUrl = `${req.protocol}://${req.get('host')}`;
+    if (typeof req.query.base === 'string') {
+      try {
+        const u = new URL(req.query.base);
+        if (u.protocol === 'http:' || u.protocol === 'https:') baseUrl = u.origin;
+      } catch {
+        // invalid ?base= — keep the fallback
+      }
+    }
     res.json(buildInvitationEmail({ rencontre: result.rows[0], baseUrl }));
   } catch (err) {
     next(err);

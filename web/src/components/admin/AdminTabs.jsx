@@ -326,7 +326,12 @@ function EmailModal({ renc, onClose }) {
   const [copied, setCopied] = useState('');
 
   useEffect(() => {
-    api.get(`/api/admin/rencontres/${renc.id}/email`).then(setData).catch((e) => setError(e.message));
+    // The browser knows the site's real public origin (scheme included) —
+    // the server can't always tell behind a reverse proxy.
+    api
+      .get(`/api/admin/rencontres/${renc.id}/email?base=${encodeURIComponent(window.location.origin)}`)
+      .then(setData)
+      .catch((e) => setError(e.message));
   }, [renc.id]);
 
   const flash = (what) => {
