@@ -79,10 +79,10 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   const ctaButton = (url, label) => `
         <table role="presentation" width="300" cellpadding="0" cellspacing="0" border="0" style="width:300px;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
           <tr>
-            <td width="300" height="48" align="center" valign="middle" bgcolor="#C1272D" style="width:300px;height:48px;background-color:#C1272D;text-align:center;">
-              <p align="center" style="margin:0;text-align:center;line-height:48px;mso-line-height-rule:exactly;">
-                <a href="${esc(url)}" target="_blank" title="Ouvrir l'inscription" style="color:#FFFFFF !important;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;text-decoration:none !important;mso-style-textfill-type:solid;mso-style-textfill-fill-color:#FFFFFF;mso-style-textfill-fill-alpha:100%;"><font face="Arial, Helvetica, sans-serif" color="#FFFFFF"><b><u style="color:#FFFFFF !important;text-decoration:none !important;mso-style-textfill-fill-color:#FFFFFF;">${label}</u></b></font></a>
-              </p>
+            <td width="300" height="48" align="center" valign="middle" bgcolor="#C1272D" style="width:300px;height:48px;background-color:#C1272D;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;color:#FFFFFF;text-decoration:none;">
+              <center style="width:100%;text-align:center;line-height:48px;mso-line-height-rule:exactly;color:#FFFFFF;text-decoration:none;">
+                <a class="sbc-cta" href="${esc(url)}" target="_blank" title="Ouvrir l'inscription" style="display:inline-block;color:#FFFFFF !important;mso-themecolor:background1;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;line-height:48px;text-align:center;text-decoration:none !important;text-underline:none;mso-style-priority:99;mso-style-textfill-type:solid;mso-style-textfill-fill-color:#FFFFFF;mso-style-textfill-fill-alpha:100%;"><span style="color:#FFFFFF !important;mso-themecolor:background1;text-decoration:none !important;text-underline:none;mso-style-textfill-type:solid;mso-style-textfill-fill-color:#FFFFFF;mso-style-textfill-fill-alpha:100%;"><font face="Arial, Helvetica, sans-serif" color="#FFFFFF" style="color:#FFFFFF !important;font-size:15px;text-decoration:none !important;text-underline:none;"><b>${label}</b></font></span></a>
+              </center>
             </td>
           </tr>
         </table>`;
@@ -99,6 +99,7 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
 <![endif]-->
 </head>
 <body bgcolor="#F2EEE8" style="margin:0;padding:0;background-color:#F2EEE8;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<style type="text/css">a.sbc-cta,a.sbc-cta:link,a.sbc-cta:visited,a.sbc-cta:hover,a.sbc-cta:active{color:#FFFFFF!important;text-decoration:none!important;}a.sbc-cta span,a.sbc-cta font{color:#FFFFFF!important;text-decoration:none!important;}</style>
 <table id="sbc-email-root" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2EEE8" style="width:100%;background-color:#F2EEE8;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
 <tr><td align="center" valign="top" style="padding:36px 14px;">
 
