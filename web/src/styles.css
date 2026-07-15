@@ -124,6 +124,41 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 }
 .admin-nav-btn.active { background: rgba(193, 39, 45, .18); color: #fff; border-left-color: var(--red); font-weight: 600; }
 
+/* Membership request workflow */
+.requests-layout { display: flex; flex-direction: column; gap: 20px; }
+.requests-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.request-stat { padding: 20px 22px; border-radius: 6px; display: flex; align-items: flex-end; justify-content: space-between; }
+.request-stat span { font-size: 12.5px; color: var(--gray-light); }
+.request-stat strong { font-family: Georgia, serif; font-size: 32px; line-height: 1; }
+.request-stat-accent { background: var(--dark); color: #fff; }
+.request-stat-accent span { color: #B7AFA6; }
+.requests-panel { border-radius: 6px; overflow: hidden; }
+.requests-toolbar { padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--border); }
+.requests-toolbar h3 { font-size: 20px; font-weight: 600; }
+.requests-toolbar p { margin-top: 4px; color: var(--gray-light); font-size: 12.5px; }
+.requests-filter { display: flex; padding: 3px; background: var(--admin-bg); border-radius: 5px; }
+.requests-filter button { border: 0; background: transparent; color: var(--gray); padding: 8px 13px; border-radius: 3px; font-size: 12.5px; font-weight: 600; }
+.requests-filter button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(27,27,27,.1); }
+.requests-error { margin: 14px 24px 0; }
+.requests-list { display: flex; flex-direction: column; }
+.request-row { display: grid; grid-template-columns: 110px minmax(260px, 1fr) auto; gap: 22px; align-items: center; padding: 22px 24px; border-top: 1px solid var(--border-soft); }
+.request-row:first-child { border-top: 0; }
+.request-row:hover { background: #FCFAF7; }
+.request-date { display: flex; flex-direction: column; gap: 4px; color: var(--gray-light); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.request-date strong { color: var(--gray); font-size: 12px; letter-spacing: 0; text-transform: none; }
+.request-title-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.request-title-line h4 { font-family: Georgia, serif; font-size: 18px; color: var(--ink); }
+.request-identity > p { margin-top: 5px; color: var(--gray); font-size: 13px; }
+.request-contact { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; }
+.request-contact a { color: var(--red); font-size: 12.5px; text-decoration: none; font-weight: 600; }
+.request-contact a:hover { text-decoration: underline; }
+.request-actions { min-width: 170px; text-align: right; }
+.request-member-link { color: var(--green); font-size: 12.5px; font-weight: 600; }
+.requests-empty { padding: 60px 24px; text-align: center; color: var(--gray-light); }
+.requests-empty > span { display: inline-flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 50%; background: #E8F3EC; color: var(--green); font-size: 20px; }
+.requests-empty h4 { margin-top: 14px; color: var(--ink); font-family: Georgia, serif; font-size: 18px; }
+.requests-empty p { margin-top: 5px; font-size: 13px; }
+
 /* Header nav */
 .nav-btn { background: none; border: none; font-size: 14.5px; font-weight: 500; color: var(--gray-mid); padding: 10px 14px; border-radius: 2px; }
 .nav-btn:hover, .nav-btn.active { color: var(--red); }
@@ -157,6 +192,10 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
   .admin-sidebar { width: 100% !important; height: auto !important; position: static !important; }
   .admin-content-header { padding: 16px 20px !important; }
   .admin-content-body { padding: 20px !important; }
+  .requests-summary { grid-template-columns: 1fr; }
+  .requests-toolbar { align-items: flex-start; flex-direction: column; }
+  .request-row { grid-template-columns: 1fr; gap: 12px; }
+  .request-actions { min-width: 0; text-align: left; }
 }
 
 @media (max-width: 640px) {

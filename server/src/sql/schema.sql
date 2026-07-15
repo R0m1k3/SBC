@@ -136,10 +136,21 @@ CREATE TABLE IF NOT EXISTS demandes_adhesion (
     entreprise TEXT NOT NULL CHECK (char_length(entreprise) BETWEEN 1 AND 120),
     email      CITEXT NOT NULL CHECK (char_length(email) <= 254),
     tel        TEXT CHECK (char_length(tel) <= 30),
-    statut     TEXT NOT NULL DEFAULT 'nouvelle' CHECK (statut IN ('nouvelle', 'traitee')),
+    statut     TEXT NOT NULL DEFAULT 'nouvelle' CHECK (statut IN ('nouvelle', 'contactee', 'validee')),
+    contacted_at TIMESTAMPTZ,
+    validated_at TIMESTAMPTZ,
+    member_id  INTEGER REFERENCES members(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE demandes_adhesion ADD COLUMN IF NOT EXISTS tel TEXT CHECK (char_length(tel) <= 30);
+ALTER TABLE demandes_adhesion ADD COLUMN IF NOT EXISTS contacted_at TIMESTAMPTZ;
+ALTER TABLE demandes_adhesion ADD COLUMN IF NOT EXISTS validated_at TIMESTAMPTZ;
+ALTER TABLE demandes_adhesion ADD COLUMN IF NOT EXISTS member_id INTEGER REFERENCES members(id) ON DELETE SET NULL;
+ALTER TABLE demandes_adhesion DROP CONSTRAINT IF EXISTS demandes_adhesion_statut_check;
+UPDATE demandes_adhesion SET statut = 'contactee', contacted_at = COALESCE(contacted_at, created_at)
+  WHERE statut = 'traitee';
+ALTER TABLE demandes_adhesion ADD CONSTRAINT demandes_adhesion_statut_check
+  CHECK (statut IN ('nouvelle', 'contactee', 'validee'));
 
 CREATE TABLE IF NOT EXISTS site_content (
     key   TEXT PRIMARY KEY,

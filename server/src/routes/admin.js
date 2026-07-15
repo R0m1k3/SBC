@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from '../db.js';
+import { pool, query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -552,13 +552,117 @@ adminRouter.post('/content/hero-photo', adminOnly, (req, res, next) => {
   });
 });
 
-// ---------- Demandes d'adhésion (admin only) ----------
-adminRouter.get('/demandes', adminOnly, async (_req, res, next) => {
+// ---------- Demandes d'adhésion (admin + moderator) ----------
+adminRouter.get('/demandes', async (_req, res, next) => {
   try {
-    const result = await query('SELECT * FROM demandes_adhesion ORDER BY created_at DESC');
+    const result = await query(`
+      SELECT d.*, m.nom AS membre_nom
+        FROM demandes_adhesion d
+        LEFT JOIN members m ON m.id = d.member_id
+       ORDER BY CASE d.statut WHEN 'nouvelle' THEN 0 WHEN 'contactee' THEN 1 ELSE 2 END,
+                d.created_at DESC`);
     res.json({ demandes: result.rows });
   } catch (err) {
     next(err);
+  }
+});
+
+adminRouter.post('/demandes/:id/contact', validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    const result = await query(
+      `UPDATE demandes_adhesion
+          SET statut = 'contactee', contacted_at = COALESCE(contacted_at, now())
+        WHERE id = $1 AND statut = 'nouvelle'
+        RETURNING *`,
+      [req.params.id]
+    );
+    if (result.rowCount === 0) {
+      const existing = await query('SELECT statut FROM demandes_adhesion WHERE id = $1', [req.params.id]);
+      if (existing.rowCount === 0) return res.status(404).json({ error: 'Demande introuvable' });
+      return res.status(409).json({ error: 'Cette demande a déjà été prise en charge.' });
+    }
+    res.json({ demande: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.post('/demandes/:id/validate', validate(idParam, 'params'), async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const request = await client.query(
+      'SELECT * FROM demandes_adhesion WHERE id = $1 FOR UPDATE',
+      [req.params.id]
+    );
+    if (request.rowCount === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Demande introuvable' });
+    }
+    const d = request.rows[0];
+    if (d.statut !== 'contactee') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: d.statut === 'validee'
+          ? 'Cette demande a déjà été validée.'
+          : "Validez d'abord la prise de contact.",
+      });
+    }
+    if (!d.email) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Une adresse email est nécessaire pour créer le compte membre.' });
+    }
+
+    let member = await client.query(
+      'SELECT id FROM members WHERE email = $1 ORDER BY id LIMIT 1 FOR UPDATE',
+      [d.email]
+    );
+    let memberId;
+    if (member.rowCount > 0) {
+      memberId = member.rows[0].id;
+      await client.query(
+        `UPDATE members
+            SET valide = true, adhesion = $1, dirigeant = CASE WHEN dirigeant = '' THEN $2 ELSE dirigeant END,
+                tel = COALESCE(tel, $3), updated_at = now()
+          WHERE id = $4`,
+        [new Date().getFullYear(), d.nom, d.tel, memberId]
+      );
+    } else {
+      member = await client.query(
+        `INSERT INTO members (nom, secteur, dirigeant, adhesion, email, tel, presentation, valide)
+         VALUES ($1, '', $2, $3, $4, $5, '', true) RETURNING id`,
+        [d.entreprise, d.nom, new Date().getFullYear(), d.email, d.tel]
+      );
+      memberId = member.rows[0].id;
+    }
+
+    const login = await client.query('SELECT id FROM users WHERE member_id = $1', [memberId]);
+    await client.query(
+      `UPDATE demandes_adhesion
+          SET statut = 'validee', contacted_at = COALESCE(contacted_at, now()),
+              validated_at = now(), member_id = $1
+        WHERE id = $2`,
+      [memberId, d.id]
+    );
+    await client.query('COMMIT');
+
+    let tempPassword = null;
+    let accessError = null;
+    if (login.rowCount === 0) {
+      try {
+        tempPassword = await ensureMemberAccess(memberId, d.email);
+      } catch (err) {
+        if (!(err instanceof AccessError)) throw err;
+        accessError = err.message;
+      }
+    }
+    res.json({ memberId, email: d.email, tempPassword, accessError });
+  } catch (err) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client?.release();
   }
 });
 

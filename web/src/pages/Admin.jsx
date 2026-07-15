@@ -7,14 +7,16 @@ import { CategoriesTab, ContenuTab } from '../components/admin/AdminContent.jsx'
 import { PastEventsTab } from '../components/admin/AdminPast.jsx';
 import { UsersTab } from '../components/admin/AdminUsers.jsx';
 import { EmailCreatorTab } from '../components/admin/AdminEmail.jsx';
+import { RequestsTab } from '../components/admin/AdminRequests.jsx';
 
-// Moderators only get members/rencontres/inscriptions/rencontres passées
+// Moderators get members/membership requests/rencontres/inscriptions/rencontres passées
 // (create + edit, never delete) — everything else (dashboard, taxonomy,
 // site content, staff account management) is admin-only, enforced both
 // here (sidebar) and server-side (routes).
 const TABS = [
   { key: 'dashboard', icon: '◧', label: 'Tableau de bord', title: 'Tableau de bord', roles: ['admin'] },
   { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator'] },
+  { key: 'demandes', icon: '◌', label: 'Demandes', title: "Demandes d’adhésion", roles: ['admin', 'moderator'] },
   { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator'] },
   { key: 'passees', icon: '▦', label: 'Rencontres passées', title: 'Rencontres passées', roles: ['admin', 'moderator'] },
   { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator'] },
@@ -147,6 +149,7 @@ export function AdminShell() {
         <div className="admin-content-body" style={{ padding: '36px 40px' }}>
           {tab === 'dashboard' && <Dashboard />}
           {tab === 'membres' && <MembersTab />}
+          {tab === 'demandes' && <RequestsTab />}
           {tab === 'rencontres' && <RencontresTab />}
           {tab === 'passees' && <PastEventsTab />}
           {tab === 'inscriptions' && <InscriptionsTab />}

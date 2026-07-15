@@ -115,7 +115,7 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
 **Rôles du back-office**
 - **Administrateur** : accès complet — tableau de bord, membres, rencontres, inscriptions,
   catégories, contenu du site, et gestion des comptes administrateurs/modérateurs.
-- **Modérateur** : accès aux membres, aux rencontres, aux rencontres passées et aux
+- **Modérateur** : accès aux membres, aux demandes d'adhésion, aux rencontres, aux rencontres passées et aux
   inscriptions (opérations du quotidien : créer, éditer) ; pas de tableau de bord, pas de
   catégories, pas de contenu du site, pas de gestion des comptes. Aucune action destructrice
   n'est autorisée à un modérateur : il ne peut ni valider/suspendre un membre, ni supprimer
@@ -134,6 +134,9 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
   (1er sept. → 31 août). La création d'un membre avec email génère automatiquement un mot de
   passe temporaire, affiché à l'admin et copiable ; il reste visible dans la liste tant que le
   membre ne l'a pas changé. L'admin peut aussi réinitialiser l'accès à tout moment.
+- Demandes d'adhésion : suivi partagé entre administrateurs et modérateurs, avec étapes
+  « nouvelle », « contact pris » puis « membre validé ». La validation réactive la fiche
+  existante trouvée par email ou crée un nouveau membre et son accès temporaire.
 - Rencontres : création, édition (avec photo affichée sur les cartes de la page d'accueil) ;
   suppression réservée aux administrateurs. Liste des inscrits avec impression et export Excel.
 - Rencontres passées : gestion complète de la section « Ils y étaient » et de la page publique
