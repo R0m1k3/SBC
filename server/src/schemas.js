@@ -31,8 +31,15 @@ export const demandeSchema = z.object({
   tel: trimmed(30, 6),
 });
 
+// Each participant carries their own image-rights decision (an adult can't
+// consent for another — art. 9 Code civil), and the member attests they
+// informed each accompanying person and obtained their agreement.
 export const inscriptionPublicSchema = z.object({
-  participants: z.array(trimmed(120, 1)).min(1).max(100),
+  participants: z
+    .array(z.object({ nom: trimmed(120, 1), imageConsent: z.boolean() }))
+    .min(1)
+    .max(100),
+  attestation: z.literal(true, { errorMap: () => ({ message: "l'attestation est requise" }) }),
 });
 
 export const memberProfileSchema = z.object({
@@ -50,6 +57,24 @@ export const memberProfileSchema = z.object({
 export const adminMemberSchema = memberProfileSchema.extend({
   valide: z.boolean().optional(),
 });
+
+// Electronic image-rights consent submitted by the member. A drawn PNG
+// signature and at least one publication scope are required to authorize;
+// refusing needs neither. Signature kept small (canvas ~500x160) to stay
+// well under the JSON body limit.
+export const imageConsentSchema = z
+  .object({
+    decision: z.enum(['accepted', 'refused']),
+    scopes: z.array(z.enum(['site', 'social', 'print'])).max(3).optional().default([]),
+    signatoryName: trimmed(120, 1),
+    signaturePng: z.string().max(60000).optional().default(''),
+  })
+  .refine(
+    (d) =>
+      d.decision !== 'accepted' ||
+      (d.signaturePng.startsWith('data:image/png;base64,') && d.scopes.length > 0),
+    { message: 'une signature et au moins un support sont requis pour autoriser', path: ['signaturePng'] }
+  );
 
 export const rencontreSchema = z.object({
   titre: trimmed(200, 1),

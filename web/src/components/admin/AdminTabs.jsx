@@ -97,6 +97,56 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
   );
 }
 
+const SCOPE_LABELS = { site: 'Site internet', social: 'Réseaux sociaux', print: 'Supports imprimés' };
+
+// Shows the member's recorded image-rights consent: decision, scopes, the
+// drawn signature and the audit metadata (date, IP) — the proof of consent.
+function ConsentRecordModal({ member, onClose }) {
+  const [consent, setConsent] = useState(undefined); // undefined = loading
+
+  useEffect(() => {
+    api.get(`/api/admin/members/${member.id}/image-consent`).then((d) => setConsent(d.consent)).catch(() => setConsent(null));
+  }, [member.id]);
+
+  return (
+    <Modal onClose={onClose} maxWidth={560} header={{ kicker: "Droit à l'image", title: member.nom }}>
+      <div style={{ padding: '26px 30px' }}>
+        {consent === undefined && <p style={{ color: 'var(--gray-light)' }}>Chargement…</p>}
+        {consent === null && <p style={{ color: 'var(--gray-light)' }}>Aucun consentement enregistré pour ce membre.</p>}
+        {consent && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <span className={`badge ${consent.decision === 'accepted' ? 'badge-green' : 'badge-red'}`}>
+                {consent.decision === 'accepted' ? 'Publication autorisée' : 'Publication refusée'}
+              </span>
+            </div>
+            {consent.decision === 'accepted' && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-mid)', marginBottom: 6 }}>Supports autorisés</div>
+                <div style={{ fontSize: 13.5, color: 'var(--gray)' }}>
+                  {(consent.scopes || '').split(',').filter(Boolean).map((s) => SCOPE_LABELS[s] || s).join(', ') || '—'}
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
+              <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Signataire</div>{consent.signatory_name}</div>
+              <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Date</div>{new Date(consent.created_at).toLocaleString('fr-FR')}</div>
+              <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Adresse IP</div>{consent.ip || '—'}</div>
+              <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Version</div>{consent.consent_version || '—'}</div>
+            </div>
+            {consent.signature_png && (
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--gray-mid)', marginBottom: 6 }}>Signature</div>
+                <img src={consent.signature_png} alt="Signature" style={{ maxWidth: '100%', border: '1px solid var(--border)', borderRadius: 6, background: '#fff' }} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 export function MembersTab() {
   const { user } = useAuth();
   const isAdmin = user.role === 'admin';
@@ -104,6 +154,7 @@ export function MembersTab() {
   const [categories, setCategories] = useState([]);
   const [modal, setModal] = useState(null); // null | 'new' | member
   const [credentials, setCredentials] = useState(null); // { email, tempPassword }
+  const [consentView, setConsentView] = useState(null); // member whose consent to view
   const [accessError, setAccessError] = useState('');
   const season = seasonLabel();
 
@@ -162,7 +213,7 @@ export function MembersTab() {
         <table className="table">
           <thead>
             <tr>
-              <th>Entreprise</th><th>Secteur</th><th>Dirigeant</th><th>Saison</th><th>Accès</th><th></th>
+              <th>Entreprise</th><th>Secteur</th><th>Dirigeant</th><th>Saison</th><th>Image</th><th>Accès</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -175,6 +226,20 @@ export function MembersTab() {
                   <span className={`badge ${m.valide ? 'badge-green' : 'badge-red'}`}>
                     {m.valide ? `Validé ${season}` : 'Non validé'}
                   </span>
+                </td>
+                <td>
+                  {m.image_consent ? (
+                    <button
+                      className={`badge ${m.image_consent === 'accepted' ? 'badge-green' : 'badge-red'}`}
+                      style={{ border: 'none', cursor: 'pointer' }}
+                      title="Voir le consentement signé"
+                      onClick={() => setConsentView(m)}
+                    >
+                      {m.image_consent === 'accepted' ? 'Autorisé' : 'Refusé'}
+                    </button>
+                  ) : (
+                    <span className="badge badge-amber">En attente</span>
+                  )}
                 </td>
                 <td>
                   <AccessCell
@@ -221,6 +286,7 @@ export function MembersTab() {
           onClose={() => setCredentials(null)}
         />
       )}
+      {consentView && <ConsentRecordModal member={consentView} onClose={() => setConsentView(null)} />}
     </div>
   );
 }
@@ -497,9 +563,10 @@ function ParticipantsModal({ renc, associationName, onClose, onEdit, onCancel, r
 
   const exportExcel = () => {
     let html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1"><thead>';
-    html += '<tr><th>Participant</th><th>Entreprise</th><th>Email</th><th>Téléphone</th><th>Rencontre</th><th>Statut</th></tr></thead><tbody>';
+    const imgLabel = (v) => (v === true ? 'Autorisée' : v === false ? 'Refusée' : '');
+    html += '<tr><th>Participant</th><th>Entreprise</th><th>Email</th><th>Téléphone</th><th>Rencontre</th><th>Droit image</th><th>Statut</th></tr></thead><tbody>';
     rows.forEach((p) => {
-      html += `<tr><td>${escHtml(p.nom)}</td><td>${escHtml(p.entreprise)}</td><td>${escHtml(p.email)}</td><td>${escHtml(p.tel)}</td><td>${escHtml(renc.titre)}</td><td>${escHtml(statutLabel(p.statut))}</td></tr>`;
+      html += `<tr><td>${escHtml(p.nom)}</td><td>${escHtml(p.entreprise)}</td><td>${escHtml(p.email)}</td><td>${escHtml(p.tel)}</td><td>${escHtml(renc.titre)}</td><td>${escHtml(imgLabel(p.image_consent))}</td><td>${escHtml(statutLabel(p.statut))}</td></tr>`;
     });
     html += '</tbody></table></body></html>';
     const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel' });
@@ -516,8 +583,9 @@ function ParticipantsModal({ renc, associationName, onClose, onEdit, onCancel, r
 
   const print = () => {
     let body = '';
+    const imgLabel = (v) => (v === true ? 'Autorisée' : v === false ? 'Refusée' : '—');
     rows.forEach((p, i) => {
-      body += `<tr><td>${i + 1}</td><td>${escHtml(p.nom)}</td><td>${escHtml(p.entreprise)}</td><td>${escHtml(p.email)}</td><td>${escHtml(p.tel)}</td><td>${escHtml(statutLabel(p.statut))}</td></tr>`;
+      body += `<tr><td>${i + 1}</td><td>${escHtml(p.nom)}</td><td>${escHtml(p.entreprise)}</td><td>${escHtml(p.email)}</td><td>${escHtml(p.tel)}</td><td>${escHtml(imgLabel(p.image_consent))}</td><td>${escHtml(statutLabel(p.statut))}</td></tr>`;
     });
     const doc = `<!doctype html><html><head><meta charset="utf-8"><title>Inscrits — ${escHtml(renc.titre)}</title>`
       + '<style>body{font-family:Arial,Helvetica,sans-serif;color:#1B1B1B;padding:32px}h1{font-size:22px;margin:0 0 4px}.meta{color:#666;font-size:13px;margin-bottom:20px}'
@@ -525,7 +593,7 @@ function ParticipantsModal({ renc, associationName, onClose, onEdit, onCancel, r
       + '.brand{color:#C1272D;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}</style></head><body>'
       + `<div class="brand">${escHtml(associationName)}</div>`
       + `<h1>${escHtml(renc.titre)}</h1><div class="meta">${escHtml(meta)} — ${rows.length} inscrits</div>`
-      + '<table><thead><tr><th>#</th><th>Participant</th><th>Entreprise</th><th>Email</th><th>Téléphone</th><th>Statut</th></tr></thead><tbody>'
+      + '<table><thead><tr><th>#</th><th>Participant</th><th>Entreprise</th><th>Email</th><th>Téléphone</th><th>Droit image</th><th>Statut</th></tr></thead><tbody>'
       + body + '</tbody></table></body></html>';
     const w = window.open('', '_blank');
     if (!w) return;
@@ -548,14 +616,21 @@ function ParticipantsModal({ renc, associationName, onClose, onEdit, onCancel, r
       <div style={{ padding: '6px 0 12px' }}>
         <table className="table">
           <thead>
-            <tr><th>Participant</th><th>Entreprise</th><th>Email</th><th>Statut</th><th></th></tr>
+            <tr><th>Participant</th><th>Entreprise</th><th>Image</th><th>Statut</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((p) => (
               <tr key={p.id}>
                 <td>{p.nom}</td>
                 <td>{p.entreprise}</td>
-                <td>{p.email}</td>
+                <td>
+                  <span
+                    className={`badge ${p.image_consent === true ? 'badge-green' : p.image_consent === false ? 'badge-red' : 'badge-amber'}`}
+                    title="Autorisation de publication de l'image du participant"
+                  >
+                    {p.image_consent === true ? 'Autorisée' : p.image_consent === false ? 'Refusée' : '—'}
+                  </span>
+                </td>
                 <td><span className={`badge ${p.statut === 'confirmee' ? 'badge-green' : 'badge-amber'}`}>{statutLabel(p.statut)}</span></td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button className="btn-link" style={{ fontSize: 12.5, marginRight: 12 }} onClick={() => onEdit(p)}>Modifier</button>

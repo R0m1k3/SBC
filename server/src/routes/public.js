@@ -113,7 +113,7 @@ publicRouter.get(
           [req.params.id]
         ),
         query(
-          `SELECT nom, statut FROM inscriptions
+          `SELECT nom, statut, image_consent FROM inscriptions
             WHERE rencontre_id = $1 AND member_id = $2 ORDER BY created_at, id`,
           [req.params.id, req.user.memberId]
         ),
@@ -144,7 +144,7 @@ publicRouter.post(
       client = await pool.connect();
       const { id } = req.params;
       const participants = req.data.participants;
-      const names = participants.map((name) => name.toLocaleLowerCase('fr-FR'));
+      const names = participants.map((p) => p.nom.toLocaleLowerCase('fr-FR'));
       if (new Set(names).size !== names.length) {
         return res.status(400).json({ error: 'Chaque participant doit avoir un nom différent.' });
       }
@@ -200,20 +200,20 @@ publicRouter.post(
 
       const keptIds = [];
       const account = member.rows[0];
-      for (const nom of participants) {
+      for (const { nom, imageConsent } of participants) {
         const key = nom.toLocaleLowerCase('fr-FR');
         const row = available.get(key)?.shift();
         if (row) {
           keptIds.push(row.id);
           await client.query(
-            'UPDATE inscriptions SET nom=$1, entreprise=$2, email=$3, tel=$4 WHERE id=$5',
-            [nom, account.nom, account.email, account.tel, row.id]
+            'UPDATE inscriptions SET nom=$1, entreprise=$2, email=$3, tel=$4, image_consent=$5 WHERE id=$6',
+            [nom, account.nom, account.email, account.tel, imageConsent, row.id]
           );
         } else {
           const inserted = await client.query(
-            `INSERT INTO inscriptions (rencontre_id, member_id, nom, entreprise, email, tel, statut)
-             VALUES ($1, $2, $3, $4, $5, $6, 'en_attente') RETURNING id`,
-            [id, account.id, nom, account.nom, account.email, account.tel]
+            `INSERT INTO inscriptions (rencontre_id, member_id, nom, entreprise, email, tel, statut, image_consent)
+             VALUES ($1, $2, $3, $4, $5, $6, 'en_attente', $7) RETURNING id`,
+            [id, account.id, nom, account.nom, account.email, account.tel, imageConsent]
           );
           keptIds.push(inserted.rows[0].id);
         }

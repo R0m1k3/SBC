@@ -2,18 +2,29 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { memberProfileSchema } from '../schemas.js';
+import { memberProfileSchema, imageConsentSchema } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
+import { IMAGE_CONSENT_VERSION } from '../imageConsent.js';
 
 export const memberRouter = Router();
 
 memberRouter.use(requireAuth('member'));
 
+// The current image-rights consent is the latest image_consents row for
+// the member (append-only trail). Exposed on the profile so the espace can
+// gate on it and show its status.
 const PROFILE_SQL = `
   SELECT m.id, m.nom, m.secteur, m.categorie_id, c.name AS categorie, m.dirigeant,
          m.adhesion, m.email, m.tel, m.site, m.adresse, m.presentation, m.valide,
-         m.logo_path, m.photo_path
-    FROM members m LEFT JOIN categories c ON c.id = m.categorie_id
+         m.logo_path, m.photo_path,
+         ic.decision AS image_consent, ic.scopes AS image_consent_scopes,
+         ic.created_at AS image_consent_at
+    FROM members m
+    LEFT JOIN categories c ON c.id = m.categorie_id
+    LEFT JOIN LATERAL (
+      SELECT decision, scopes, created_at FROM image_consents
+       WHERE member_id = m.id ORDER BY created_at DESC LIMIT 1
+    ) ic ON true
    WHERE m.id = $1`;
 
 memberRouter.get('/profile', async (req, res, next) => {
@@ -85,3 +96,30 @@ function imageRoute(column) {
 
 memberRouter.post('/profile/logo', imageRoute('logo_path'));
 memberRouter.post('/profile/photo', imageRoute('photo_path'));
+
+// Records an electronic image-rights consent (or refusal) as a new row in
+// the append-only trail — a simple electronic signature valid as proof
+// under art. 7 RGPD. Captures IP and user-agent for the record.
+memberRouter.post('/image-consent', validate(imageConsentSchema), async (req, res, next) => {
+  try {
+    const { decision, scopes, signatoryName, signaturePng } = req.data;
+    await query(
+      `INSERT INTO image_consents
+         (member_id, decision, scopes, signatory_name, signature_png, consent_version, ip, user_agent)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        req.user.memberId,
+        decision,
+        (scopes || []).join(','),
+        signatoryName,
+        decision === 'accepted' ? signaturePng : null,
+        IMAGE_CONSENT_VERSION,
+        req.ip || '',
+        (req.headers['user-agent'] || '').slice(0, 400),
+      ]
+    );
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});

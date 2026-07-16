@@ -30,6 +30,26 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS billing_type TEXT NOT NULL DEFAULT 
 ALTER TABLE members DROP CONSTRAINT IF EXISTS members_billing_type_check;
 ALTER TABLE members ADD CONSTRAINT members_billing_type_check CHECK (billing_type IN ('sluc_partner', 'non_partner'));
 
+-- Image-rights consent (droit à l'image) collected electronically from the
+-- member. Append-only audit trail: the current consent is the latest row
+-- for a member, and withdrawing/changing adds a new row. Each row is a
+-- simple electronic signature (art. 7 RGPD proof of consent): who, what
+-- (decision + scopes + text version), when (created_at), plus a drawn
+-- signature, IP and user-agent.
+CREATE TABLE IF NOT EXISTS image_consents (
+    id              BIGSERIAL PRIMARY KEY,
+    member_id       INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    decision        TEXT NOT NULL CHECK (decision IN ('accepted', 'refused')),
+    scopes          TEXT NOT NULL DEFAULT '',
+    signatory_name  TEXT NOT NULL CHECK (char_length(signatory_name) BETWEEN 1 AND 120),
+    signature_png   TEXT,
+    consent_version TEXT NOT NULL DEFAULT '',
+    ip              TEXT,
+    user_agent      TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_image_consents_member ON image_consents(member_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS users (
     id                   SERIAL PRIMARY KEY,
     email                CITEXT NOT NULL UNIQUE CHECK (char_length(email) <= 254),
@@ -86,6 +106,11 @@ CREATE TABLE IF NOT EXISTS inscriptions (
 CREATE INDEX IF NOT EXISTS idx_inscriptions_rencontre ON inscriptions(rencontre_id);
 ALTER TABLE inscriptions ADD COLUMN IF NOT EXISTS member_id INTEGER REFERENCES members(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_inscriptions_member_rencontre ON inscriptions(member_id, rencontre_id);
+-- Per-participant image-rights declaration collected at event registration:
+-- an adult cannot consent for another adult (art. 9 Code civil), so each
+-- accompanying person's own decision is recorded, the member attesting they
+-- informed the person and obtained their agreement. NULL = not answered.
+ALTER TABLE inscriptions ADD COLUMN IF NOT EXISTS image_consent BOOLEAN;
 -- Attach legacy registrations when their email identifies a member account.
 UPDATE inscriptions i SET member_id = m.id
   FROM members m

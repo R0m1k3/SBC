@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/AuthContext.jsx';
 import { api, seasonLabel } from '../lib/api.js';
 import ImageSlot from '../components/ImageSlot.jsx';
+import { ImageConsentForm } from '../components/ImageConsent.jsx';
 import { AdminShell } from './Admin.jsx';
 
 function LoginSection({ title = 'Gérez votre présence au Club', kicker = 'Espace membre' }) {
@@ -153,6 +154,69 @@ function ForcedPasswordChange() {
   );
 }
 
+// Image-rights authorization prompt shown at a member's first access. It
+// is NOT blocking: the member can sign the general authorization, refuse,
+// or continue and decide later. Publication is never gated on this — it is
+// the association's recorded authorization, not a technical lock.
+function ImageConsentGate({ dirigeant, onDone, onSkip }) {
+  return (
+    <section style={{ minHeight: 'calc(100vh - 76px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', background: 'var(--bg)' }}>
+      <div className="card" style={{ width: '100%', maxWidth: 620, borderRadius: 10, padding: '34px 36px' }}>
+        <div className="kicker" style={{ marginBottom: 12 }}>Droit à l'image</div>
+        <h1 className="serif" style={{ fontWeight: 500, fontSize: 27, lineHeight: 1.15, marginBottom: 8 }}>
+          Autorisation de publier votre image
+        </h1>
+        <p style={{ fontSize: 13.5, color: 'var(--gray-light)', lineHeight: 1.6, marginBottom: 22 }}>
+          En signant, vous autorisez le club à publier toute photo de vous sur ses supports. C'est une
+          autorisation générale, valable pour l'ensemble de vos photos — vous n'aurez plus à valider chaque
+          publication. Modifiable à tout moment depuis votre espace.
+        </p>
+        <ImageConsentForm dirigeant={dirigeant} onDone={() => onDone?.()} />
+        <button type="button" onClick={onSkip} className="btn-link-gray" style={{ marginTop: 18 }}>
+          Plus tard — accéder à mon espace
+        </button>
+      </div>
+    </section>
+  );
+}
+
+// In-portal card: shows the current authorization status and lets the
+// member sign, update or withdraw it.
+function ConsentCard({ member, dirigeant, onChanged }) {
+  const [editing, setEditing] = useState(false);
+  const decision = member.image_consent; // 'accepted' | 'refused' | null
+  const at = member.image_consent_at ? new Date(member.image_consent_at).toLocaleDateString('fr-FR') : null;
+  const accepted = decision === 'accepted';
+
+  return (
+    <div className="card" style={{ borderRadius: 8, padding: 30, marginTop: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+        <h2 className="serif" style={{ fontSize: 22, fontWeight: 600 }}>Droit à l'image</h2>
+        <span className={`badge ${accepted ? 'badge-green' : decision === 'refused' ? 'badge-red' : 'badge-amber'}`}>
+          {accepted ? 'Autorisation signée' : decision === 'refused' ? 'Refusé' : 'Non signée'}
+        </span>
+      </div>
+      <p style={{ fontSize: 13.5, color: 'var(--gray-light)', lineHeight: 1.6, margin: '8px 0 0' }}>
+        {accepted
+          ? `Vous avez autorisé la publication de toute photo de vous${at ? ` le ${at}` : ''}. Aucune validation supplémentaire n'est nécessaire.`
+          : decision === 'refused'
+            ? `Vous avez refusé la publication de votre image${at ? ` le ${at}` : ''}. Pour toute question, contactez le club.`
+            : "Vous n'avez pas encore signé l'autorisation de droit à l'image."}
+      </p>
+      {!editing ? (
+        <button className="btn btn-outline-soft btn-sm" style={{ marginTop: 16, fontSize: 14, padding: '11px 20px' }} onClick={() => setEditing(true)}>
+          {decision ? 'Modifier mon choix' : "Signer l'autorisation"}
+        </button>
+      ) : (
+        <div style={{ marginTop: 18 }}>
+          <ImageConsentForm dirigeant={dirigeant} compact onDone={() => { setEditing(false); onChanged?.(); }} />
+          <button type="button" className="btn-link-gray" style={{ marginTop: 10 }} onClick={() => setEditing(false)}>Annuler</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Portal() {
   const { logout } = useAuth();
   const [member, setMember] = useState(null);
@@ -161,6 +225,9 @@ function Portal() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const season = seasonLabel();
+
+  const loadProfile = () =>
+    api.get('/api/member/profile').then((p) => { setMember(p.member); setForm((f) => f ? { ...f, ...p.member } : p.member); });
 
   useEffect(() => {
     Promise.all([api.get('/api/member/profile'), api.get('/api/public/bootstrap')])
@@ -178,6 +245,11 @@ function Portal() {
         <p style={{ color: 'var(--gray-light)' }}>{error || 'Chargement…'}</p>
       </section>
     );
+  }
+
+  // First access: require an explicit image-rights decision before the portal.
+  if (member.image_consent == null) {
+    return <ImageConsentGate dirigeant={member.dirigeant} onDone={loadProfile} />;
   }
 
   const onChange = (e) => {
@@ -251,6 +323,11 @@ function Portal() {
                 <div style={{ width: 96, height: 96 }}>
                   <ImageSlot circle endpoint="/api/member/profile/photo" value={form.photo_path} placeholder="Déposez votre photo" onUploaded={(path) => { setForm((f) => ({ ...f, photo_path: path })); setMember((m) => ({ ...m, photo_path: path })); }} />
                 </div>
+                {form.photo_path && member.image_consent !== 'accepted' && (
+                  <div style={{ fontSize: 10.5, color: 'var(--red)', marginTop: 6, lineHeight: 1.4, maxWidth: 96 }}>
+                    Non publiée sans autorisation d'image
+                  </div>
+                )}
               </div>
             </div>
 
@@ -298,6 +375,7 @@ function Portal() {
               </div>
             </form>
           </div>
+          <ConsentCard member={member} dirigeant={form.dirigeant} onChanged={loadProfile} />
           <PasswordCard />
         </div>
 

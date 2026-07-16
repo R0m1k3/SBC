@@ -40,10 +40,15 @@ const MEMBER_SQL = `
          m.logo_path, m.photo_path,
          (u.id IS NOT NULL) AS has_login,
          COALESCE(u.must_change_password, false) AS must_change_password,
-         CASE WHEN u.must_change_password THEN u.temp_password ELSE NULL END AS temp_password
+         CASE WHEN u.must_change_password THEN u.temp_password ELSE NULL END AS temp_password,
+         ic.decision AS image_consent, ic.created_at AS image_consent_at
     FROM members m
     LEFT JOIN categories c ON c.id = m.categorie_id
-    LEFT JOIN users u ON u.member_id = m.id`;
+    LEFT JOIN users u ON u.member_id = m.id
+    LEFT JOIN LATERAL (
+      SELECT decision, created_at FROM image_consents
+       WHERE member_id = m.id ORDER BY created_at DESC LIMIT 1
+    ) ic ON true`;
 
 const RENC_SQL = `
   SELECT r.id, r.titre, r.date_renc, r.heure, r.lieu, r.description, r.places,
@@ -53,7 +58,7 @@ const RENC_SQL = `
 
 const INSCR_SQL = `
   SELECT i.id, i.nom, i.entreprise, i.email, i.tel, i.statut, i.created_at,
-         i.rencontre_id, r.titre AS rencontre
+         i.rencontre_id, i.image_consent, r.titre AS rencontre
     FROM inscriptions i JOIN rencontres r ON r.id = i.rencontre_id`;
 
 async function loadAssociationSettings() {
@@ -167,6 +172,21 @@ adminRouter.post('/members/:id/reset-access', validate(idParam, 'params'), async
     res.json({ tempPassword });
   } catch (err) {
     if (err instanceof AccessError) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
+});
+
+// The full signed image-rights consent record (latest), including the
+// drawn signature — the association's proof of consent.
+adminRouter.get('/members/:id/image-consent', validate(idParam, 'params'), async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT decision, scopes, signatory_name, signature_png, consent_version, ip, created_at
+         FROM image_consents WHERE member_id = $1 ORDER BY created_at DESC LIMIT 1`,
+      [req.params.id]
+    );
+    res.json({ consent: result.rows[0] || null });
+  } catch (err) {
     next(err);
   }
 });

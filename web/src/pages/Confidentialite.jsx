@@ -39,8 +39,9 @@ export default function Confidentialite() {
           <div style={row}>
             <span style={cellTitle}>Inscription à une rencontre</span>
             <span>
-              Noms et prénoms des participants, rattachés au compte membre qui les inscrit.
-              <br /><em>Finalité :</em> gérer les inscriptions et l'accueil des participants. <em>Base légale :</em> exécution de l'adhésion.
+              Noms et prénoms des participants (membre et accompagnants), rattachés au compte membre, et
+              l'autorisation de droit à l'image recueillie pour chacun.
+              <br /><em>Finalité :</em> gérer les inscriptions et l'accueil des participants. <em>Base légale :</em> exécution de l'adhésion ; l'autorisation d'image de chaque personne repose sur son consentement (art. 9 du Code civil), le membre attestant l'avoir recueilli.
             </span>
           </div>
           <div style={row}>
@@ -118,10 +119,12 @@ export default function Confidentialite() {
 
       <LegalSection title="Droit à l'image">
         <p>
-          Des photographies sont prises lors des rencontres du club et peuvent être publiées sur ce site
-          (section « Rencontres passées »). Elles ne sont publiées qu'avec l'accord des personnes
-          identifiables. Si vous apparaissez sur une photographie et souhaitez son retrait, écrivez à{' '}
-          <LegalValue value={email} label="email de contact" /> : elle sera retirée dans les meilleurs délais.
+          Des photographies sont prises lors des rencontres du club et peuvent être publiées sur ses supports
+          (site, réseaux sociaux, documents imprimés). Conformément à l'article 9 du Code civil, chaque
+          personne identifiable donne sa propre autorisation : les membres via leur espace personnel, les
+          accompagnants au moment de leur inscription à l'événement. Pour un mineur, l'autorisation est donnée
+          par son représentant légal. Si vous apparaissez sur une photographie et souhaitez son retrait, écrivez
+          à <LegalValue value={email} label="email de contact" /> : elle sera retirée dans les meilleurs délais.
         </p>
       </LegalSection>
 

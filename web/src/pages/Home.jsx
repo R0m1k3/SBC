@@ -11,7 +11,10 @@ import { associationSettings } from '../lib/siteSettings.js';
 export function InscriptionModal({ rencontre, onClose, onDone }) {
   const { user, login } = useAuth();
   const [context, setContext] = useState(null);
-  const [participants, setParticipants] = useState(['']);
+  // Each participant: { nom, imageConsent } — image consent is recorded per
+  // person (an adult can't consent for another, art. 9 Code civil).
+  const [participants, setParticipants] = useState([{ nom: '', imageConsent: true }]);
+  const [attestation, setAttestation] = useState(false);
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [done, setDone] = useState(false);
   const [wasRegistered, setWasRegistered] = useState(false);
@@ -26,7 +29,13 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
       .then((d) => {
         setContext(d);
         setWasRegistered(d.participants.length > 0);
-        setParticipants(d.participants.length ? d.participants.map((p) => p.nom) : [d.member.dirigeant || '']);
+        setParticipants(
+          d.participants.length
+            ? d.participants.map((p) => ({ nom: p.nom, imageConsent: p.image_consent !== false }))
+            : [{ nom: d.member.dirigeant || '', imageConsent: true }]
+        );
+        // A returning registration already carried the attestation.
+        setAttestation(d.participants.length > 0);
       })
       .catch((err) => setError(err.message));
   }, [user, rencontre.id]);
@@ -45,7 +54,10 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
   };
 
   const changeParticipant = (index, value) => {
-    setParticipants((current) => current.map((name, i) => (i === index ? value : name)));
+    setParticipants((current) => current.map((p, i) => (i === index ? { ...p, nom: value } : p)));
+  };
+  const toggleParticipantImage = (index) => {
+    setParticipants((current) => current.map((p, i) => (i === index ? { ...p, imageConsent: !p.imageConsent } : p)));
   };
 
   const maxPerAccount = context?.rencontre.participants_par_compte || rencontre.participants_par_compte || 1;
@@ -53,9 +65,13 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!attestation) {
+      setError("Merci de confirmer l'attestation sur le droit à l'image.");
+      return;
+    }
     setBusy(true);
     try {
-      await api.post(`/api/public/rencontres/${rencontre.id}/inscriptions`, { participants });
+      await api.post(`/api/public/rencontres/${rencontre.id}/inscriptions`, { participants, attestation });
       setDone(true);
       onDone?.();
     } catch (err) {
@@ -133,33 +149,40 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
           <div style={{ background: 'var(--beige)', padding: '12px 14px', borderRadius: 4, fontSize: 13, color: 'var(--gray)', marginBottom: 18 }}>
             Compte : <strong>{context.member.nom}</strong> · maximum {maxPerAccount} participant{maxPerAccount > 1 ? 's' : ''}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {participants.map((name, index) => (
-              <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <label className="field-plain" style={{ flex: 1 }}>Participant {index + 1} — nom & prénom
-                  <input value={name} onChange={(e) => changeParticipant(index, e.target.value)} required maxLength={120} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {participants.map((p, index) => (
+              <div key={index} style={{ border: '1px solid var(--border-soft)', borderRadius: 6, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <label className="field-plain" style={{ flex: 1 }}>Participant {index + 1} — nom & prénom
+                    <input value={p.nom} onChange={(e) => changeParticipant(index, e.target.value)} required maxLength={120} />
+                  </label>
+                  {participants.length > 1 && (
+                    <button type="button" className="btn btn-outline-soft btn-sm" style={{ padding: '11px 13px' }} onClick={() => setParticipants((current) => current.filter((_, i) => i !== index))} aria-label={`Retirer le participant ${index + 1}`}>×</button>
+                  )}
+                </div>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 10, fontSize: 12.5, color: 'var(--gray)', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={p.imageConsent} onChange={() => toggleParticipantImage(index)} style={{ marginTop: 2 }} />
+                  <span>Cette personne autorise la publication de son image (photos de l'événement) sur les supports du club.</span>
                 </label>
-                {participants.length > 1 && (
-                  <button type="button" className="btn btn-outline-soft btn-sm" style={{ padding: '11px 13px' }} onClick={() => setParticipants((current) => current.filter((_, i) => i !== index))} aria-label={`Retirer le participant ${index + 1}`}>×</button>
-                )}
               </div>
             ))}
           </div>
           {participants.length < maxPerAccount && (
-            <button type="button" className="btn-link" style={{ marginTop: 14 }} onClick={() => setParticipants((current) => [...current, ''])}>
+            <button type="button" className="btn-link" style={{ marginTop: 14 }} onClick={() => setParticipants((current) => [...current, { nom: '', imageConsent: true }])}>
               + Ajouter un participant
             </button>
           )}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 16, fontSize: 12, color: 'var(--gray)', cursor: 'pointer', lineHeight: 1.5 }}>
+            <input type="checkbox" checked={attestation} onChange={(e) => setAttestation(e.target.checked)} style={{ marginTop: 2 }} />
+            <span>J'atteste avoir informé chaque personne inscrite que des photos peuvent être prises et publiées, et avoir recueilli son accord (ou son refus) ci-dessus. Pour un mineur, l'accord est donné par son représentant légal.</span>
+          </label>
           {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
-          <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 22, padding: 14 }} disabled={busy}>
+          <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 18, padding: 14 }} disabled={busy}>
             {busy ? 'Enregistrement…' : `Enregistrer ${participants.length} participant${participants.length > 1 ? 's' : ''}`}
           </button>
-          <p style={{ fontSize: 12, color: 'var(--gray-light)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
-            Vous pourrez rouvrir ce formulaire pour modifier les noms enregistrés.
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
-            Les noms recueillis servent uniquement à gérer les inscriptions à cette rencontre —{' '}
-            <Link to="/confidentialite" style={{ color: 'var(--red)' }}>politique de confidentialité</Link>.
+          <p style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', marginTop: 10, lineHeight: 1.5 }}>
+            Vous pourrez rouvrir ce formulaire pour modifier les noms et les choix.{' '}
+            <Link to="/confidentialite" style={{ color: 'var(--red)' }}>Politique de confidentialité</Link>.
           </p>
         </form>
       )}
