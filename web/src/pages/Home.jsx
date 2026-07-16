@@ -430,7 +430,7 @@ export default function Home() {
               Faites entrer votre entreprise dans le Club.
             </h2>
             <p style={{ fontSize: 16.5, lineHeight: 1.65, color: '#B7AFA6', marginBottom: 32 }}>
-              Rejoignez un réseau de 85 dirigeants, accédez à toutes nos rencontres et bénéficiez d'une visibilité au cœur du SLUC Nancy.
+              Rejoignez un réseau de {members.length} dirigeant{members.length > 1 ? 's' : ''}, accédez à toutes nos rencontres et bénéficiez d'une visibilité au cœur du SLUC Nancy.
             </p>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 14 }}>
               {['Accès à toutes les rencontres business', "Présence dans l'annuaire des membres"].map((t) => (
