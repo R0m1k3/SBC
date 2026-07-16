@@ -251,6 +251,20 @@ export function ParametresTab() {
               <input name="association_phone" type="tel" value={settings.association_phone} onChange={onChange} maxLength={40} />
             </label>
           </div>
+          <label className="field">SIRET
+            <input
+              name="association_siret"
+              value={settings.association_siret}
+              onChange={onChange}
+              inputMode="numeric"
+              maxLength={20}
+              placeholder="14 chiffres"
+              aria-describedby="association-siret-help"
+            />
+            <span id="association-siret-help" style={{ marginTop: 5, fontSize: 11.5, color: 'var(--gray-light)', fontWeight: 400 }}>
+              Les espaces sont acceptés; le numéro doit contenir exactement 14 chiffres.
+            </span>
+          </label>
           <div className="grid-2" style={{ gap: 12 }}>
             <label className="field">Contact principal
               <input name="association_contact" value={settings.association_contact} onChange={onChange} maxLength={160} placeholder="Nom et fonction" />

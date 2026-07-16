@@ -49,6 +49,7 @@ export default function Footer() {
             {settings.association_contact && <span>{settings.association_contact}</span>}
             {settings.association_email && <a href={`mailto:${settings.association_email}`} style={linkStyle}>{settings.association_email}</a>}
             {settings.association_phone && <a href={`tel:${settings.association_phone.replace(/[^+\d]/g, '')}`} style={linkStyle}>{settings.association_phone}</a>}
+            {settings.association_siret && <span>SIRET : {settings.association_siret}</span>}
             {settings.association_website && <a href={settings.association_website} target="_blank" rel="noopener noreferrer" style={linkStyle}>Site web</a>}
           </div>
         </div>

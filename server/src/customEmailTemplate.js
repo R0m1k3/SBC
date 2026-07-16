@@ -73,7 +73,7 @@ export function buildCustomEmail({ content, baseUrl, association = {} }) {
   ${content.signature ? `<tr><td style="padding:24px 40px 38px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:26px;color:#1B1B1B;">${lines(content.signature)}</td></tr>` : '<tr><td height="26" style="height:26px;line-height:26px;">&nbsp;</td></tr>'}
   <tr><td bgcolor="#0F0E0D" style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:22px;">
     ${esc(settings.association_name)}${settings.association_address ? ` &middot; ${lines(settings.association_address)}` : ''}<br>
-    ${settings.association_contact ? `${esc(settings.association_contact)} &middot; ` : ''}${settings.association_email ? `<a href="mailto:${esc(settings.association_email)}" style="color:#E0777A;text-decoration:none;">${esc(settings.association_email)}</a>` : ''}${settings.association_phone ? ` &middot; ${esc(settings.association_phone)}` : ''}
+    ${settings.association_contact ? `${esc(settings.association_contact)} &middot; ` : ''}${settings.association_email ? `<a href="mailto:${esc(settings.association_email)}" style="color:#E0777A;text-decoration:none;">${esc(settings.association_email)}</a>` : ''}${settings.association_phone ? ` &middot; ${esc(settings.association_phone)}` : ''}${settings.association_siret ? `<br>SIRET&nbsp;: ${esc(settings.association_siret)}` : ''}
   </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->

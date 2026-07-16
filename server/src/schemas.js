@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 const trimmed = (max, min = 0) => z.string().trim().min(min).max(max);
+const siret = z.string().trim().max(20).refine(
+  (value) => !value || /^\d{14}$/.test(value.replace(/\s/g, '')),
+  'doit contenir exactement 14 chiffres'
+);
 
 export const idParam = z.object({ id: z.coerce.number().int().positive() });
 
@@ -100,6 +104,7 @@ export const contentSchema = z.object({
   association_address: trimmed(500).optional(),
   association_email: trimmed(254).email().or(z.literal('')).optional(),
   association_phone: trimmed(40).optional(),
+  association_siret: siret.optional(),
   association_contact: trimmed(160).optional(),
   association_website: z.string().trim().url().max(300).or(z.literal('')).optional(),
   association_facebook_url: z.string().trim().url().max(500).or(z.literal('')).optional(),

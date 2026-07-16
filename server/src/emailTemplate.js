@@ -157,7 +157,7 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {}, associati
 
   <tr><td bgcolor="#0F0E0D" style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:22px;">
     ${esc(settings.association_name)}${settings.association_address ? ` &middot; ${escML(settings.association_address)}` : ''}<br>
-    ${settings.association_contact ? `${esc(settings.association_contact)} &middot; ` : ''}${settings.association_email ? `<a href="mailto:${esc(settings.association_email)}" style="color:#E0777A;text-decoration:none;">${esc(settings.association_email)}</a>` : ''}${settings.association_phone ? ` &middot; ${esc(settings.association_phone)}` : ''}
+    ${settings.association_contact ? `${esc(settings.association_contact)} &middot; ` : ''}${settings.association_email ? `<a href="mailto:${esc(settings.association_email)}" style="color:#E0777A;text-decoration:none;">${esc(settings.association_email)}</a>` : ''}${settings.association_phone ? ` &middot; ${esc(settings.association_phone)}` : ''}${settings.association_siret ? `<br>SIRET&nbsp;: ${esc(settings.association_siret)}` : ''}
   </td></tr>
 
 </table>

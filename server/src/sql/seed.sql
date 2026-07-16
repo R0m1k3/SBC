@@ -63,6 +63,7 @@ INSERT INTO site_content (key, value) VALUES
   ('association_address', E'Palais des Sports Jean Weille\nNancy (54)'),
   ('association_email', 'contact@sluc-businessclub.fr'),
   ('association_phone', '+33 3 83 00 00 00'),
+  ('association_siret', ''),
   ('association_contact', ''),
   ('association_website', ''),
   ('association_facebook_url', 'https://www.facebook.com/search/top?q=sluc%20business%20club'),

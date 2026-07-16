@@ -35,7 +35,7 @@ export default function Association() {
     .map((name) => name.trim())
     .filter(Boolean);
   const hasContact = settings.association_address || settings.association_email
-    || settings.association_phone || settings.association_contact;
+    || settings.association_phone || settings.association_contact || settings.association_siret;
 
   return (
     <main>
@@ -147,6 +147,7 @@ export default function Association() {
               {settings.association_address && <span style={{ whiteSpace: 'pre-line', color: 'var(--gray)' }}>{settings.association_address}</span>}
               {settings.association_email && <a className="btn-link" href={`mailto:${settings.association_email}`}>{settings.association_email}</a>}
               {settings.association_phone && <a className="btn-link" href={`tel:${settings.association_phone.replace(/[^+\d]/g, '')}`}>{settings.association_phone}</a>}
+              {settings.association_siret && <span style={{ color: 'var(--gray)' }}>SIRET : {settings.association_siret}</span>}
             </div>
           </div>
         </section>
