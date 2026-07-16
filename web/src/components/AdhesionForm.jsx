@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 import Modal from './Modal.jsx';
 
@@ -66,6 +67,11 @@ export function AdhesionForm({ showTitle = true }) {
       <button type="submit" className="btn btn-red" style={{ width: '100%', marginTop: 24, padding: 15 }} disabled={busy}>
         {busy ? 'Envoi…' : 'Envoyer ma demande'}
       </button>
+      <p style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
+        Les informations recueillies servent uniquement à instruire votre demande d'adhésion.
+        Pour en savoir plus et exercer vos droits, consultez notre{' '}
+        <Link to="/confidentialite" style={{ color: 'var(--red)' }}>politique de confidentialité</Link>.
+      </p>
     </form>
   );
 }

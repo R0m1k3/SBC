@@ -114,6 +114,12 @@ export const contentSchema = z.object({
   association_treasurer: trimmed(160).optional(),
   association_secretary: trimmed(160).optional(),
   association_board_members: trimmed(3000).optional(),
+  // Legal pages (mentions légales & politique de confidentialité)
+  association_rna: trimmed(30).optional(),
+  association_host_name: trimmed(200).optional(),
+  association_host_address: trimmed(300).optional(),
+  association_host_tel: trimmed(30).optional(),
+  legal_updated: trimmed(60).optional(),
 });
 
 // Invitation email composer: every text zone is optional — absent fields

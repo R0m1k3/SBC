@@ -86,7 +86,11 @@ export default function Footer() {
         }}
       >
         <span>© {new Date().getFullYear()} {settings.association_name}</span>
-        <span>Mentions légales · Confidentialité</span>
+        <span>
+          <Link to="/mentions-legales" style={{ color: 'inherit', textDecoration: 'none' }}>Mentions légales</Link>
+          {' · '}
+          <Link to="/confidentialite" style={{ color: 'inherit', textDecoration: 'none' }}>Confidentialité</Link>
+        </span>
       </div>
     </footer>
   );

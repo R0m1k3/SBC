@@ -157,6 +157,10 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
           <p style={{ fontSize: 12, color: 'var(--gray-light)', textAlign: 'center', marginTop: 12, lineHeight: 1.5 }}>
             Vous pourrez rouvrir ce formulaire pour modifier les noms enregistrés.
           </p>
+          <p style={{ fontSize: 11, color: 'var(--gray-light)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
+            Les noms recueillis servent uniquement à gérer les inscriptions à cette rencontre —{' '}
+            <Link to="/confidentialite" style={{ color: 'var(--red)' }}>politique de confidentialité</Link>.
+          </p>
         </form>
       )}
     </Modal>

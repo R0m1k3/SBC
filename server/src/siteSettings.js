@@ -13,6 +13,12 @@ export const ASSOCIATION_DEFAULTS = {
   association_treasurer: '',
   association_secretary: '',
   association_board_members: '',
+  // Legal pages (mentions légales & politique de confidentialité)
+  association_rna: '',
+  association_host_name: '',
+  association_host_address: '',
+  association_host_tel: '',
+  legal_updated: 'Juillet 2026',
 };
 
 export function associationSettings(content = {}) {

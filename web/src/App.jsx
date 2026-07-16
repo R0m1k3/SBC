@@ -7,6 +7,8 @@ import Inscription from './pages/Inscription.jsx';
 import Annuaire from './pages/Annuaire.jsx';
 import Association from './pages/Association.jsx';
 import RencontresPassees from './pages/RencontresPassees.jsx';
+import MentionsLegales from './pages/MentionsLegales.jsx';
+import Confidentialite from './pages/Confidentialite.jsx';
 import Espace from './pages/Espace.jsx';
 import Admin from './pages/Admin.jsx';
 import { useAuth } from './lib/AuthContext.jsx';
@@ -38,6 +40,8 @@ export default function App() {
           <Route path="/annuaire" element={<Annuaire />} />
           <Route path="/rencontres-passees" element={<RencontresPassees />} />
           <Route path="/association" element={<Association />} />
+          <Route path="/mentions-legales" element={<MentionsLegales />} />
+          <Route path="/confidentialite" element={<Confidentialite />} />
           <Route path="/espace-membre" element={<Espace />} />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="*" element={<Home />} />

@@ -229,6 +229,16 @@ export function ParametresTab() {
     }
   };
 
+  // Fields legally required on the mentions légales page (LCEN).
+  const legalMissing = [
+    [settings.association_name, "nom de l'association"],
+    [settings.association_address, 'adresse du siège'],
+    [settings.association_rna, 'numéro RNA'],
+    [settings.association_president, 'président·e'],
+    [settings.association_host_name, "nom de l'hébergeur"],
+    [settings.association_host_address, "adresse de l'hébergeur"],
+  ].filter(([v]) => !String(v || '').trim()).map(([, label]) => label);
+
   return (
     <form onSubmit={save} style={{ maxWidth: 980, display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="card" style={{ borderRadius: 6, padding: 26 }}>
@@ -251,20 +261,35 @@ export function ParametresTab() {
               <input name="association_phone" type="tel" value={settings.association_phone} onChange={onChange} maxLength={40} />
             </label>
           </div>
-          <label className="field">SIRET
-            <input
-              name="association_siret"
-              value={settings.association_siret}
-              onChange={onChange}
-              inputMode="numeric"
-              maxLength={20}
-              placeholder="14 chiffres"
-              aria-describedby="association-siret-help"
-            />
-            <span id="association-siret-help" style={{ marginTop: 5, fontSize: 11.5, color: 'var(--gray-light)', fontWeight: 400 }}>
-              Les espaces sont acceptés; le numéro doit contenir exactement 14 chiffres.
-            </span>
-          </label>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">Numéro RNA
+              <input
+                name="association_rna"
+                value={settings.association_rna}
+                onChange={onChange}
+                maxLength={30}
+                placeholder="W543001234"
+                aria-describedby="association-rna-help"
+              />
+              <span id="association-rna-help" style={{ marginTop: 5, fontSize: 11.5, color: 'var(--gray-light)', fontWeight: 400 }}>
+                Sur le récépissé de déclaration en préfecture — requis dans les mentions légales.
+              </span>
+            </label>
+            <label className="field">SIRET
+              <input
+                name="association_siret"
+                value={settings.association_siret}
+                onChange={onChange}
+                inputMode="numeric"
+                maxLength={20}
+                placeholder="14 chiffres"
+                aria-describedby="association-siret-help"
+              />
+              <span id="association-siret-help" style={{ marginTop: 5, fontSize: 11.5, color: 'var(--gray-light)', fontWeight: 400 }}>
+                Les espaces sont acceptés; le numéro doit contenir exactement 14 chiffres.
+              </span>
+            </label>
+          </div>
           <div className="grid-2" style={{ gap: 12 }}>
             <label className="field">Contact principal
               <input name="association_contact" value={settings.association_contact} onChange={onChange} maxLength={160} placeholder="Nom et fonction" />
@@ -316,6 +341,38 @@ export function ParametresTab() {
               placeholder="Une personne par ligne"
             />
           </label>
+        </div>
+      </div>
+
+      <div className="card" style={{ borderRadius: 6, padding: 26 }}>
+        <h3 className="serif" style={{ fontSize: 19, fontWeight: 600, marginBottom: 8 }}>Pages légales & hébergeur</h3>
+        <p style={{ fontSize: 13.5, color: 'var(--gray-light)', lineHeight: 1.55, marginBottom: 14 }}>
+          Ces informations alimentent les pages <strong>Mentions légales</strong> et{' '}
+          <strong>Politique de confidentialité</strong> (liens en pied de page). La LCEN impose
+          d'identifier l'hébergeur du site ; tant qu'un champ requis est vide, la page publique
+          affiche « à compléter » à sa place.
+        </p>
+        {legalMissing.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 16px', background: '#FBF6EE', border: '1px solid #F0D6BC', borderRadius: 6, fontSize: 12.5, color: '#8A6D3B', lineHeight: 1.5, marginBottom: 18 }}>
+            <span>⚠</span>
+            <span>Champs requis manquants pour des mentions légales conformes : {legalMissing.join(', ')}.</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <label className="field">Hébergeur — nom / raison sociale
+            <input name="association_host_name" value={settings.association_host_name} onChange={onChange} maxLength={200} placeholder="Ex. OVH SAS, Scaleway, ou vous-même si auto-hébergé" />
+          </label>
+          <label className="field">Hébergeur — adresse
+            <input name="association_host_address" value={settings.association_host_address} onChange={onChange} maxLength={300} placeholder="Ex. 2 rue Kellermann, 59100 Roubaix, France" />
+          </label>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">Hébergeur — téléphone
+              <input name="association_host_tel" value={settings.association_host_tel} onChange={onChange} maxLength={30} />
+            </label>
+            <label className="field">Date de mise à jour des pages légales
+              <input name="legal_updated" value={settings.legal_updated} onChange={onChange} maxLength={60} placeholder="Ex. Juillet 2026" />
+            </label>
+          </div>
         </div>
       </div>
 
