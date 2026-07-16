@@ -1,5 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  CalendarCheck2,
+  CalendarDays,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  PanelsTopLeft,
+  ReceiptText,
+  Settings2,
+  ShieldCheck,
+  Tags,
+  UserCog,
+  UserRoundPlus,
+  Users,
+} from 'lucide-react';
 import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts, statutLabel } from '../lib/api.js';
 import { MembersTab, RencontresTab, InscriptionsTab } from '../components/admin/AdminTabs.jsx';
@@ -11,24 +28,31 @@ import { RequestsTab } from '../components/admin/AdminRequests.jsx';
 import { BillingTab } from '../components/admin/AdminBilling.jsx';
 import { RgpdTab } from '../components/admin/AdminRgpd.jsx';
 
-// Moderators get members/membership requests/rencontres/inscriptions/rencontres passées
-// (create + edit, never delete) — everything else (dashboard, taxonomy,
-// site content, staff account management) is admin-only, enforced both
-// here (sidebar) and server-side (routes).
+// Staff members share the operational sections. Administrators also manage
+// content and settings, while treasurers additionally access billing. The
+// same permissions are enforced here and by the server routes.
 const TABS = [
-  { key: 'dashboard', icon: '◧', label: 'Tableau de bord', title: 'Tableau de bord', roles: ['admin'] },
-  { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator', 'treasurer'] },
-  { key: 'demandes', icon: '◌', label: 'Demandes', title: "Demandes d’adhésion", roles: ['admin', 'moderator', 'treasurer'] },
-  { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator', 'treasurer'] },
-  { key: 'passees', icon: '▦', label: 'Rencontres passées', title: 'Rencontres passées', roles: ['admin', 'moderator', 'treasurer'] },
-  { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator', 'treasurer'] },
-  { key: 'facturation', icon: '€', label: 'Facturation', title: 'Facturation des adhésions', roles: ['admin', 'treasurer'] },
-  { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
-  { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
-  { key: 'parametres', icon: '⚙', label: 'Paramètres', title: "Paramètres de l'association", roles: ['admin'] },
-  { key: 'rgpd', icon: '⚖', label: 'RGPD', title: 'Conformité RGPD', roles: ['admin'] },
-  { key: 'emails', icon: '✉', label: "Créateur d'e-mail", title: "Créateur d'e-mail", roles: ['admin'] },
-  { key: 'utilisateurs', icon: '⚿', label: 'Utilisateurs', title: 'Administrateurs, trésoriers & modérateurs', roles: ['admin'] },
+  { key: 'dashboard', group: 'overview', icon: LayoutDashboard, label: 'Tableau de bord', title: 'Tableau de bord', roles: ['admin'] },
+  { key: 'demandes', group: 'members', icon: UserRoundPlus, label: 'Demandes', title: "Demandes d’adhésion", roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'membres', group: 'members', icon: Users, label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'facturation', group: 'members', icon: ReceiptText, label: 'Facturation', title: 'Facturation des adhésions', roles: ['admin', 'treasurer'] },
+  { key: 'rencontres', group: 'events', icon: CalendarDays, label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'inscriptions', group: 'events', icon: ClipboardList, label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'passees', group: 'events', icon: CalendarCheck2, label: 'Rencontres passées', title: 'Rencontres passées', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'emails', group: 'communication', icon: Mail, label: "Créateur d'e-mail", title: "Créateur d'e-mail", roles: ['admin'] },
+  { key: 'contenu', group: 'communication', icon: PanelsTopLeft, label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
+  { key: 'categories', group: 'communication', icon: Tags, label: 'Catégories', title: 'Catégories', roles: ['admin'] },
+  { key: 'parametres', group: 'settings', icon: Settings2, label: 'Association', title: "Paramètres de l'association", roles: ['admin'] },
+  { key: 'utilisateurs', group: 'settings', icon: UserCog, label: 'Utilisateurs', title: 'Administrateurs, trésoriers & modérateurs', roles: ['admin'] },
+  { key: 'rgpd', group: 'settings', icon: ShieldCheck, label: 'RGPD', title: 'Conformité RGPD', roles: ['admin'] },
+];
+
+const NAV_GROUPS = [
+  { key: 'overview', label: "Vue d'ensemble" },
+  { key: 'members', label: 'Adhérents' },
+  { key: 'events', label: 'Rencontres' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'settings', label: 'Configuration' },
 ];
 
 function Dashboard() {
@@ -108,6 +132,10 @@ function Dashboard() {
 export function AdminShell() {
   const { user, logout } = useAuth();
   const tabs = TABS.filter((t) => t.roles.includes(user.role));
+  const navGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    tabs: tabs.filter((item) => item.group === group.key),
+  })).filter((group) => group.tabs.length > 0);
   const [tab, setTab] = useState(tabs[0].key);
 
   const current = tabs.find((t) => t.key === tab) || tabs[0];
@@ -116,27 +144,45 @@ export function AdminShell() {
 
   return (
     <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--admin-bg)' }}>
-      <aside className="admin-sidebar" style={{ width: 250, flexShrink: 0, background: 'var(--dark)', color: '#fff', display: 'flex', flexDirection: 'column', padding: '26px 0', position: 'sticky', top: 0, height: '100vh' }}>
-        <div style={{ padding: '0 24px 26px', borderBottom: '1px solid rgba(255,255,255,.1)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/assets/logo.jpg" alt="SLUC" style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 4, background: '#fff' }} />
-          <div style={{ lineHeight: 1.1 }}>
-            <div className="serif" style={{ fontSize: 16, fontWeight: 600 }}>
-              {roleLabel}
-            </div>
-            <div style={{ fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: '#8A8279' }}>Business Club</div>
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-header">
+          <img src="/assets/logo.jpg" alt="SLUC" className="admin-sidebar-logo" />
+          <div className="admin-sidebar-brand">
+            <div className="serif">Administration</div>
+            <span>{roleLabel}</span>
           </div>
         </div>
-        <nav style={{ padding: '20px 14px', display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-          {tabs.map((t) => (
-            <button key={t.key} className={`admin-nav-btn${tab === t.key ? ' active' : ''}`} onClick={() => setTab(t.key)}>
-              {t.icon} {t.label}
-            </button>
+        <nav className="admin-nav" aria-label="Navigation de l'administration">
+          {navGroups.map((group) => (
+            <div className="admin-nav-group" key={group.key}>
+              <div className="admin-nav-group-label">{group.label}</div>
+              <div className="admin-nav-group-items">
+                {group.tabs.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      className={`admin-nav-btn${tab === item.key ? ' active' : ''}`}
+                      onClick={() => setTab(item.key)}
+                      aria-current={tab === item.key ? 'page' : undefined}
+                    >
+                      <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </nav>
-        <div style={{ padding: '14px 24px 0', borderTop: '1px solid rgba(255,255,255,.1)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <Link to="/" style={{ color: '#B7AFA6', fontSize: 13.5, fontWeight: 500, padding: '6px 0', textDecoration: 'none' }}>← Retour au site</Link>
-          <button onClick={logout} style={{ background: 'none', border: 'none', color: '#B7AFA6', fontSize: 13.5, fontWeight: 500, padding: '6px 0', textAlign: 'left' }}>
-            Se déconnecter
+        <div className="admin-sidebar-footer">
+          <Link to="/" className="admin-sidebar-action">
+            <ArrowLeft size={17} aria-hidden="true" />
+            <span>Retour au site</span>
+          </Link>
+          <button onClick={logout} className="admin-sidebar-action">
+            <LogOut size={17} aria-hidden="true" />
+            <span>Se déconnecter</span>
           </button>
         </div>
       </aside>
