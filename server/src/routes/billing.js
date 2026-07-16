@@ -219,8 +219,12 @@ billingRouter.post('/seasons/:season/invoices', validate(billingSeasonParam, 'pa
         ? settings.sluc_partner_amount_ht
         : settings.non_partner_amount_ht;
       const amountNet = Math.round(amountHt * 100) / 100;
-      const sequence = await client.query(`SELECT nextval('billing_invoice_number_seq') AS n`);
-      const invoiceNumber = `FAC-${req.params.season.slice(0, 4)}-${String(sequence.rows[0].n).padStart(5, '0')}`;
+      const sequence = await client.query(
+        `SELECT nextval('billing_invoice_number_seq') AS n,
+                to_char(CURRENT_DATE, 'YYYY') AS year,
+                to_char(CURRENT_DATE, 'MM') AS month`
+      );
+      const invoiceNumber = `FAC-${sequence.rows[0].year}-${sequence.rows[0].month}-${String(sequence.rows[0].n).padStart(5, '0')}`;
       await client.query(
         `INSERT INTO membership_invoices
           (season, member_id, invoice_number, due_date, member_name, member_address, member_email,

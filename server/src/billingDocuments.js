@@ -40,7 +40,7 @@ export function sanitizeLegalMentions(value) {
     .join('\n');
 }
 
-function collectPdf(draw, options = {}) {
+function collectPdf(draw, { pageNumbers = true, ...options } = {}) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 48, bufferPages: true, ...options });
     const chunks = [];
@@ -48,18 +48,20 @@ function collectPdf(draw, options = {}) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
     draw(doc);
-    const range = doc.bufferedPageRange();
-    for (let page = range.start; page < range.start + range.count; page += 1) {
-      doc.switchToPage(page);
-      const bottomMargin = doc.page.margins.bottom;
-      doc.page.margins.bottom = 0;
-      doc.fontSize(8).fillColor('#8A8279').text(
-        `Page ${page - range.start + 1} / ${range.count}`,
-        48,
-        doc.page.height - 24,
-        { width: doc.page.width - 96, align: 'right', lineBreak: false }
-      );
-      doc.page.margins.bottom = bottomMargin;
+    if (pageNumbers) {
+      const range = doc.bufferedPageRange();
+      for (let page = range.start; page < range.start + range.count; page += 1) {
+        doc.switchToPage(page);
+        const bottomMargin = doc.page.margins.bottom;
+        doc.page.margins.bottom = 0;
+        doc.fontSize(8).fillColor('#8A8279').text(
+          `Page ${page - range.start + 1} / ${range.count}`,
+          48,
+          doc.page.height - 24,
+          { width: doc.page.width - 96, align: 'right', lineBreak: false }
+        );
+        doc.page.margins.bottom = bottomMargin;
+      }
     }
     doc.end();
   });
@@ -129,7 +131,7 @@ export function buildInvoicePdf(invoice) {
       ? `Facture réglée le ${dateFr(invoice.paid_at)} par ${paymentLabel(invoice.payment_method).toLowerCase()}.`
       : invoice.status === 'annulee'
         ? 'Facture annulée.'
-        : `Paiement attendu avant le ${dateFr(invoice.due_date)} par virement, chèque ou carte bleue.`;
+        : `Paiement attendu avant le ${dateFr(invoice.due_date)} par virement ou chèque.`;
     doc.font('Helvetica').fontSize(8.5).fillColor(GRAY).text(paymentStatus, 48, 655, { width: 499 });
     const ribValues = [issuer.iban, issuer.bic, issuer.rib_account_holder, issuer.rib_bank_name,
       issuer.rib_bank_code, issuer.rib_branch_code, issuer.rib_account_number, issuer.rib_key];
@@ -175,7 +177,7 @@ export function buildInvoicePdf(invoice) {
       doc.moveTo(48, 84).lineTo(547, 84).lineWidth(2).strokeColor(RED).stroke();
       doc.font('Helvetica').fontSize(9).fillColor(GRAY).text(legalMentions, 48, 108, { width: 499, lineGap: 3 });
     }
-  }, { info: { Title: `Facture ${invoice.invoice_number}`, Author: text(invoice.issuer_snapshot?.association_name) } });
+  }, { pageNumbers: false, info: { Title: `Facture ${invoice.invoice_number}`, Author: text(invoice.issuer_snapshot?.association_name) } });
 }
 
 export function buildPaidMembersPdf({ season, rows }) {
