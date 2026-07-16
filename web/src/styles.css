@@ -171,6 +171,16 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 }
 .admin-sidebar-action:hover { background: rgba(255, 255, 255, .055); color: #fff; }
 .admin-sidebar-action:focus-visible { outline: 2px solid var(--red-soft); outline-offset: 1px; }
+.admin-panel-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+}
+.admin-panel-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.admin-export-btn {
+  min-height: 38px; padding: 9px 13px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; font-size: 12.5px; line-height: 1; text-decoration: none; white-space: nowrap;
+}
+.admin-export-btn svg { flex: 0 0 auto; }
 
 /* Membership request workflow */
 .requests-layout { display: flex; flex-direction: column; gap: 20px; }
@@ -257,6 +267,9 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
   .admin-nav { grid-template-columns: 1fr; gap: 20px; }
   .admin-sidebar-footer { align-items: stretch; flex-direction: column; }
   .admin-sidebar-action { width: 100%; }
+  .admin-panel-header { align-items: stretch; flex-direction: column; padding: 18px 20px; }
+  .admin-panel-actions { display: grid; grid-template-columns: 1fr 1fr; justify-content: stretch; }
+  .admin-panel-actions .admin-export-btn:last-child { grid-column: 1 / -1; }
 
   /* Header nav: tighter spacing so the extra links (added alongside the
      new "rencontres passées" page) wrap without feeling cramped. */

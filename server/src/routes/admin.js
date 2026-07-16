@@ -23,6 +23,7 @@ import { AccessError } from '../errors.js';
 import { buildInvitationEmail } from '../emailTemplate.js';
 import { buildCustomEmail } from '../customEmailTemplate.js';
 import { buildProcessingRegister, buildImageConsentForm } from '../complianceDocuments.js';
+import { buildMembersPdf, buildMembersWorkbook } from '../memberDocuments.js';
 import { billingRouter } from './billing.js';
 
 export const adminRouter = Router();
@@ -66,6 +67,11 @@ async function loadAssociationSettings() {
   return Object.fromEntries(result.rows.map((row) => [row.key, row.value]));
 }
 
+function currentSeason(date = new Date()) {
+  const start = date.getMonth() >= 8 ? date.getFullYear() : date.getFullYear() - 1;
+  return `${start}-${start + 1}`;
+}
+
 // ---------- Dashboard (admin only) ----------
 adminRouter.get('/dashboard', adminOnly, async (_req, res, next) => {
   try {
@@ -93,6 +99,38 @@ adminRouter.get('/members', async (_req, res, next) => {
   try {
     const result = await query(`${MEMBER_SQL} ORDER BY m.nom`);
     res.json({ members: result.rows });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.get('/members.xlsx', async (_req, res, next) => {
+  try {
+    const [members, association] = await Promise.all([
+      query(`${MEMBER_SQL} ORDER BY LOWER(m.nom), m.id`),
+      loadAssociationSettings(),
+    ]);
+    const season = currentSeason();
+    const workbook = await buildMembersWorkbook({ season, rows: members.rows, association });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="membres-${season}.xlsx"`);
+    res.send(workbook);
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.get('/members.pdf', async (_req, res, next) => {
+  try {
+    const [members, association] = await Promise.all([
+      query(`${MEMBER_SQL} ORDER BY LOWER(m.nom), m.id`),
+      loadAssociationSettings(),
+    ]);
+    const season = currentSeason();
+    const pdf = await buildMembersPdf({ season, rows: members.rows, association });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="membres-${season}.pdf"`);
+    res.send(pdf);
   } catch (err) {
     next(err);
   }

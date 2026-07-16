@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { FileSpreadsheet, FileText, Plus } from 'lucide-react';
 import { api, dateParts, seasonLabel, statutLabel } from '../../lib/api.js';
 import { copyRichEmail } from '../../lib/emailClipboard.js';
 import { downloadOutlookDraft } from '../../lib/outlookDraft.js';
@@ -190,16 +191,27 @@ export function MembersTab() {
 
   return (
     <div className="card" style={{ borderRadius: 6, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+      <div className="admin-panel-header">
         <div>
           <h3 className="serif" style={{ fontSize: 19, fontWeight: 600 }}>Membres · {actifs} validés</h3>
           <div style={{ fontSize: 12.5, color: 'var(--gray-light)', marginTop: 3 }}>
             Saison {season} · {members.length - actifs} à renouveler
           </div>
         </div>
-        <button className="btn btn-red btn-sm" style={{ fontSize: 13, padding: '10px 18px' }} onClick={() => setModal('new')}>
-          + Ajouter un membre
-        </button>
+        <div className="admin-panel-actions">
+          <a className="btn btn-outline-soft btn-sm admin-export-btn" href="/api/admin/members.xlsx" download>
+            <FileSpreadsheet size={17} aria-hidden="true" />
+            <span>Excel (.xlsx)</span>
+          </a>
+          <a className="btn btn-outline-soft btn-sm admin-export-btn" href="/api/admin/members.pdf" download>
+            <FileText size={17} aria-hidden="true" />
+            <span>PDF</span>
+          </a>
+          <button className="btn btn-red btn-sm admin-export-btn" onClick={() => setModal('new')}>
+            <Plus size={17} aria-hidden="true" />
+            <span>Ajouter un membre</span>
+          </button>
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '14px 24px', background: '#FBF6EE', borderBottom: '1px solid var(--border-soft)', fontSize: 12.5, color: '#8A6D3B', lineHeight: 1.5 }}>
         <span>ⓘ</span>
