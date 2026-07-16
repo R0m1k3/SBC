@@ -347,6 +347,6 @@ export default function Espace() {
   if (loading) return <main style={{ minHeight: '60vh' }} />;
   if (!user) return <main><LoginSection /></main>;
   if (user.mustChangePassword) return <main><ForcedPasswordChange /></main>;
-  if (user.role === 'admin' || user.role === 'moderator') return <AdminShell />;
+  if (user.role === 'admin' || user.role === 'moderator' || user.role === 'treasurer') return <AdminShell />;
   return <main><Portal /></main>;
 }

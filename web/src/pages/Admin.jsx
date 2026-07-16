@@ -8,6 +8,7 @@ import { PastEventsTab } from '../components/admin/AdminPast.jsx';
 import { UsersTab } from '../components/admin/AdminUsers.jsx';
 import { EmailCreatorTab } from '../components/admin/AdminEmail.jsx';
 import { RequestsTab } from '../components/admin/AdminRequests.jsx';
+import { BillingTab } from '../components/admin/AdminBilling.jsx';
 
 // Moderators get members/membership requests/rencontres/inscriptions/rencontres passées
 // (create + edit, never delete) — everything else (dashboard, taxonomy,
@@ -15,16 +16,17 @@ import { RequestsTab } from '../components/admin/AdminRequests.jsx';
 // here (sidebar) and server-side (routes).
 const TABS = [
   { key: 'dashboard', icon: '◧', label: 'Tableau de bord', title: 'Tableau de bord', roles: ['admin'] },
-  { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator'] },
-  { key: 'demandes', icon: '◌', label: 'Demandes', title: "Demandes d’adhésion", roles: ['admin', 'moderator'] },
-  { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator'] },
-  { key: 'passees', icon: '▦', label: 'Rencontres passées', title: 'Rencontres passées', roles: ['admin', 'moderator'] },
-  { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator'] },
+  { key: 'membres', icon: '▤', label: 'Membres', title: 'Gestion des membres', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'demandes', icon: '◌', label: 'Demandes', title: "Demandes d’adhésion", roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'rencontres', icon: '◈', label: 'Rencontres', title: 'Rencontres', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'passees', icon: '▦', label: 'Rencontres passées', title: 'Rencontres passées', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator', 'treasurer'] },
+  { key: 'facturation', icon: '€', label: 'Facturation', title: 'Facturation des adhésions', roles: ['admin', 'treasurer'] },
   { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
   { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
   { key: 'parametres', icon: '⚙', label: 'Paramètres', title: "Paramètres de l'association", roles: ['admin'] },
   { key: 'emails', icon: '✉', label: "Créateur d'e-mail", title: "Créateur d'e-mail", roles: ['admin'] },
-  { key: 'utilisateurs', icon: '⚿', label: 'Administrateurs', title: 'Administrateurs & modérateurs', roles: ['admin'] },
+  { key: 'utilisateurs', icon: '⚿', label: 'Utilisateurs', title: 'Administrateurs, trésoriers & modérateurs', roles: ['admin'] },
 ];
 
 function Dashboard() {
@@ -108,6 +110,7 @@ export function AdminShell() {
 
   const current = tabs.find((t) => t.key === tab) || tabs[0];
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const roleLabel = { admin: 'Admin', moderator: 'Modérateur', treasurer: 'Trésorier' }[user.role];
 
   return (
     <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', background: 'var(--admin-bg)' }}>
@@ -116,7 +119,7 @@ export function AdminShell() {
           <img src="/assets/logo.jpg" alt="SLUC" style={{ height: 40, width: 40, objectFit: 'cover', borderRadius: 4, background: '#fff' }} />
           <div style={{ lineHeight: 1.1 }}>
             <div className="serif" style={{ fontSize: 16, fontWeight: 600 }}>
-              {user.role === 'admin' ? 'Admin' : 'Modérateur'}
+              {roleLabel}
             </div>
             <div style={{ fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: '#8A8279' }}>Business Club</div>
           </div>
@@ -154,6 +157,7 @@ export function AdminShell() {
           {tab === 'rencontres' && <RencontresTab />}
           {tab === 'passees' && <PastEventsTab />}
           {tab === 'inscriptions' && <InscriptionsTab />}
+          {tab === 'facturation' && <BillingTab />}
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'contenu' && <ContenuTab />}
           {tab === 'parametres' && <ParametresTab />}

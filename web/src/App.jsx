@@ -23,7 +23,7 @@ export default function App() {
   const isAdminBackend =
     location.pathname.startsWith('/admin') ||
     (location.pathname === '/espace-membre' &&
-      (user?.role === 'admin' || user?.role === 'moderator') &&
+      (user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'treasurer') &&
       !user?.mustChangePassword);
 
   useEffect(() => {

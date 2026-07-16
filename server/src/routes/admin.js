@@ -22,13 +22,15 @@ import { createStaffUser, resetStaffAccess } from '../userAccess.js';
 import { AccessError } from '../errors.js';
 import { buildInvitationEmail } from '../emailTemplate.js';
 import { buildCustomEmail } from '../customEmailTemplate.js';
+import { billingRouter } from './billing.js';
 
 export const adminRouter = Router();
 
 // Every route below requires at least an authenticated staff session
 // (admin or moderator); individual routes further restrict to admin-only
 // where noted.
-adminRouter.use(requireAuth(['admin', 'moderator']));
+adminRouter.use(requireAuth(['admin', 'moderator', 'treasurer']));
+adminRouter.use('/billing', billingRouter);
 const adminOnly = requireAuth('admin');
 
 const MEMBER_SQL = `
@@ -680,7 +682,7 @@ adminRouter.get('/users', adminOnly, async (req, res, next) => {
       SELECT id, email, full_name, role, must_change_password,
              CASE WHEN must_change_password THEN temp_password ELSE NULL END AS temp_password,
              created_at
-        FROM users WHERE role IN ('admin', 'moderator')
+        FROM users WHERE role IN ('admin', 'moderator', 'treasurer')
        ORDER BY role, full_name, email`);
     res.json({ users: result.rows.map((u) => ({ ...u, is_self: u.id === req.user.sub })) });
   } catch (err) {
@@ -714,7 +716,7 @@ adminRouter.put('/users/:id/role', adminOnly, validate(idParam, 'params'), valid
     if (req.params.id === req.user.sub) {
       return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle.' });
     }
-    const target = await query(`SELECT role FROM users WHERE id = $1 AND role IN ('admin', 'moderator')`, [req.params.id]);
+    const target = await query(`SELECT role FROM users WHERE id = $1 AND role IN ('admin', 'moderator', 'treasurer')`, [req.params.id]);
     if (target.rowCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
     if (target.rows[0].role === 'admin' && req.data.role !== 'admin') {
       const adminCount = await query(`SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin'`);
@@ -734,7 +736,7 @@ adminRouter.delete('/users/:id', adminOnly, validate(idParam, 'params'), async (
     if (req.params.id === req.user.sub) {
       return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte.' });
     }
-    const target = await query(`SELECT role FROM users WHERE id = $1 AND role IN ('admin', 'moderator')`, [req.params.id]);
+    const target = await query(`SELECT role FROM users WHERE id = $1 AND role IN ('admin', 'moderator', 'treasurer')`, [req.params.id]);
     if (target.rowCount === 0) return res.status(404).json({ error: 'Compte introuvable' });
     if (target.rows[0].role === 'admin') {
       const adminCount = await query(`SELECT COUNT(*)::int AS n FROM users WHERE role = 'admin'`);
@@ -742,7 +744,7 @@ adminRouter.delete('/users/:id', adminOnly, validate(idParam, 'params'), async (
         return res.status(400).json({ error: 'Impossible de supprimer le dernier compte administrateur.' });
       }
     }
-    await query(`DELETE FROM users WHERE id = $1 AND role IN ('admin', 'moderator')`, [req.params.id]);
+    await query(`DELETE FROM users WHERE id = $1 AND role IN ('admin', 'moderator', 'treasurer')`, [req.params.id]);
     res.json({ ok: true });
   } catch (err) {
     next(err);

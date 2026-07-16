@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS members (
     tel          TEXT CHECK (char_length(tel) <= 30),
     site         TEXT CHECK (char_length(site) <= 200),
     adresse      TEXT CHECK (char_length(adresse) <= 300),
+    billing_type TEXT NOT NULL DEFAULT 'non_partner' CHECK (billing_type IN ('sluc_partner', 'non_partner')),
     presentation TEXT NOT NULL DEFAULT '' CHECK (char_length(presentation) <= 2000),
     valide       BOOLEAN NOT NULL DEFAULT false,
     logo_path    TEXT,
@@ -25,14 +26,17 @@ CREATE TABLE IF NOT EXISTS members (
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE members ADD COLUMN IF NOT EXISTS adresse TEXT CHECK (char_length(adresse) <= 300);
+ALTER TABLE members ADD COLUMN IF NOT EXISTS billing_type TEXT NOT NULL DEFAULT 'non_partner';
+ALTER TABLE members DROP CONSTRAINT IF EXISTS members_billing_type_check;
+ALTER TABLE members ADD CONSTRAINT members_billing_type_check CHECK (billing_type IN ('sluc_partner', 'non_partner'));
 
 CREATE TABLE IF NOT EXISTS users (
     id                   SERIAL PRIMARY KEY,
     email                CITEXT NOT NULL UNIQUE CHECK (char_length(email) <= 254),
     password_hash        TEXT NOT NULL,
-    role                 TEXT NOT NULL CHECK (role IN ('member', 'admin', 'moderator')),
+    role                 TEXT NOT NULL CHECK (role IN ('member', 'admin', 'moderator', 'treasurer')),
     member_id            INTEGER UNIQUE REFERENCES members(id) ON DELETE CASCADE,
-    -- Display name for admin/moderator accounts (member accounts show their
+    -- Display name for staff accounts (member accounts show their
     -- name via the linked members row instead, this stays NULL for them).
     full_name            TEXT,
     -- Temporary password shown to the admin (create / reset access), kept
@@ -48,7 +52,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS temp_password TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
-ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('member', 'admin', 'moderator'));
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('member', 'admin', 'moderator', 'treasurer'));
 
 CREATE TABLE IF NOT EXISTS rencontres (
     id          SERIAL PRIMARY KEY,
@@ -158,3 +162,46 @@ CREATE TABLE IF NOT EXISTS site_content (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL DEFAULT ''
 );
+
+-- Seasonal membership billing settings and immutable invoice snapshots.
+CREATE TABLE IF NOT EXISTS billing_season_settings (
+    season                TEXT PRIMARY KEY CHECK (season ~ '^[0-9]{4}-[0-9]{4}$'),
+    sluc_partner_amount_ht NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (sluc_partner_amount_ht >= 0),
+    non_partner_amount_ht  NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (non_partner_amount_ht >= 0),
+    vat_rate               NUMERIC(5,2) NOT NULL DEFAULT 20 CHECK (vat_rate BETWEEN 0 AND 100),
+    payment_due_days       INTEGER NOT NULL DEFAULT 30 CHECK (payment_due_days BETWEEN 0 AND 365),
+    iban                   TEXT NOT NULL DEFAULT '' CHECK (char_length(iban) <= 42),
+    legal_mentions         TEXT NOT NULL DEFAULT '' CHECK (char_length(legal_mentions) <= 3000),
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE SEQUENCE IF NOT EXISTS billing_invoice_number_seq START WITH 1;
+
+CREATE TABLE IF NOT EXISTS membership_invoices (
+    id                BIGSERIAL PRIMARY KEY,
+    season            TEXT NOT NULL REFERENCES billing_season_settings(season) ON DELETE RESTRICT,
+    member_id         INTEGER NOT NULL REFERENCES members(id) ON DELETE RESTRICT,
+    invoice_number    TEXT NOT NULL UNIQUE,
+    issued_at         DATE NOT NULL DEFAULT CURRENT_DATE,
+    due_date          DATE NOT NULL,
+    member_name       TEXT NOT NULL,
+    member_address    TEXT NOT NULL DEFAULT '',
+    member_email      TEXT NOT NULL DEFAULT '',
+    billing_type      TEXT NOT NULL CHECK (billing_type IN ('sluc_partner', 'non_partner')),
+    amount_ht         NUMERIC(12,2) NOT NULL CHECK (amount_ht >= 0),
+    vat_rate          NUMERIC(5,2) NOT NULL CHECK (vat_rate BETWEEN 0 AND 100),
+    vat_amount        NUMERIC(12,2) NOT NULL CHECK (vat_amount >= 0),
+    amount_ttc        NUMERIC(12,2) NOT NULL CHECK (amount_ttc >= 0),
+    issuer_snapshot   JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status            TEXT NOT NULL DEFAULT 'emise' CHECK (status IN ('emise', 'payee', 'annulee')),
+    payment_method    TEXT CHECK (payment_method IN ('carte', 'virement', 'cheque')),
+    paid_at           DATE,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK ((status = 'payee' AND payment_method IS NOT NULL AND paid_at IS NOT NULL) OR status <> 'payee')
+);
+CREATE INDEX IF NOT EXISTS idx_membership_invoices_season ON membership_invoices(season);
+CREATE INDEX IF NOT EXISTS idx_membership_invoices_member ON membership_invoices(member_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_invoices_active_member_season
+  ON membership_invoices(member_id, season) WHERE status <> 'annulee';

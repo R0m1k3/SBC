@@ -3,7 +3,7 @@ import { api } from '../../lib/api.js';
 import Modal from '../Modal.jsx';
 import { AccessCell, CredentialsModal } from './AccessControls.jsx';
 
-const ROLE_LABEL = { admin: 'Administrateur', moderator: 'Modérateur' };
+const ROLE_LABEL = { admin: 'Administrateur', moderator: 'Modérateur', treasurer: 'Trésorier' };
 
 function UserFormModal({ onClose, onCreated }) {
   const [form, setForm] = useState({ fullName: '', email: '', role: 'moderator' });
@@ -35,6 +35,7 @@ function UserFormModal({ onClose, onCreated }) {
           <label className="field">Rôle
             <select name="role" value={form.role} onChange={onChange}>
               <option value="moderator">Modérateur — membres, rencontres, inscriptions</option>
+              <option value="treasurer">Trésorier — mêmes accès + facturation</option>
               <option value="admin">Administrateur — accès complet</option>
             </select>
           </label>
@@ -101,10 +102,10 @@ export function UsersTab() {
     <div className="card" style={{ borderRadius: 6, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
         <div>
-          <h3 className="serif" style={{ fontSize: 19, fontWeight: 600 }}>Administrateurs & modérateurs</h3>
+          <h3 className="serif" style={{ fontSize: 19, fontWeight: 600 }}>Comptes du back-office</h3>
           <div style={{ fontSize: 12.5, color: 'var(--gray-light)', marginTop: 3, maxWidth: 520, lineHeight: 1.5 }}>
-            Les modérateurs gèrent les membres, les rencontres et les inscriptions. Les administrateurs
-            ont accès à l'ensemble du back-office.
+            Les modérateurs gèrent les membres et les rencontres. Les trésoriers disposent en plus de la
+            facturation. Les administrateurs ont accès à l'ensemble du back-office.
           </div>
         </div>
         <button className="btn btn-red btn-sm" style={{ fontSize: 13, padding: '10px 18px' }} onClick={() => setModal(true)}>
@@ -142,13 +143,16 @@ export function UsersTab() {
                     <span style={{ fontSize: 12, color: 'var(--gray-light)' }}>Vous</span>
                   ) : (
                     <>
-                      <button
-                        className="btn-link-gray"
-                        style={{ color: 'var(--gray)', marginRight: 14 }}
-                        onClick={() => changeRole(u, u.role === 'admin' ? 'moderator' : 'admin')}
+                      <select
+                        value={u.role}
+                        onChange={(event) => changeRole(u, event.target.value)}
+                        aria-label={`Rôle de ${u.full_name || u.email}`}
+                        style={{ width: 145, marginRight: 14, padding: '7px 9px', border: '1px solid var(--input-border)', borderRadius: 3, background: '#fff', fontSize: 12.5 }}
                       >
-                        {u.role === 'admin' ? 'Passer modérateur' : 'Passer admin'}
-                      </button>
+                        <option value="moderator">Modérateur</option>
+                        <option value="treasurer">Trésorier</option>
+                        <option value="admin">Administrateur</option>
+                      </select>
                       <button className="btn-link" style={{ fontSize: 13 }} onClick={() => remove(u)}>Supprimer</button>
                     </>
                   )}

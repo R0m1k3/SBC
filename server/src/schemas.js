@@ -87,7 +87,7 @@ export const pastPhotoParam = z.object({
 
 export const categorySchema = z.object({ name: trimmed(80, 1) });
 
-export const staffRoleEnum = z.enum(['admin', 'moderator']);
+export const staffRoleEnum = z.enum(['admin', 'moderator', 'treasurer']);
 
 export const staffUserSchema = z.object({
   fullName: trimmed(120, 1),
@@ -96,6 +96,37 @@ export const staffUserSchema = z.object({
 });
 
 export const roleChangeSchema = z.object({ role: staffRoleEnum });
+
+export const billingSeasonParam = z.object({
+  season: z.string().regex(/^\d{4}-\d{4}$/, 'format AAAA-AAAA'),
+});
+
+const iban = z.string().trim().max(42).refine(
+  (value) => !value || /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(value.replace(/\s/g, '').toUpperCase()),
+  'IBAN invalide'
+);
+
+export const billingSettingsSchema = z.object({
+  sluc_partner_amount_ht: z.coerce.number().min(0).max(1000000),
+  non_partner_amount_ht: z.coerce.number().min(0).max(1000000),
+  vat_rate: z.coerce.number().min(0).max(100),
+  payment_due_days: z.coerce.number().int().min(0).max(365),
+  iban,
+  legal_mentions: trimmed(3000).optional().default(''),
+});
+
+export const billingTypeSchema = z.object({
+  billing_type: z.enum(['sluc_partner', 'non_partner']),
+});
+
+export const invoiceGenerationSchema = z.object({
+  member_ids: z.array(z.coerce.number().int().positive()).min(1).max(10000).optional(),
+});
+
+export const paymentSchema = z.object({
+  payment_method: z.enum(['carte', 'virement', 'cheque']),
+  paid_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'format AAAA-MM-JJ'),
+});
 
 export const contentSchema = z.object({
   hero_quote_text: trimmed(300).optional(),
