@@ -49,8 +49,13 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-SlucAdmin2026!}
       MEMBER_INITIAL_PASSWORD: ${MEMBER_INITIAL_PASSWORD:-SlucMembre2026!}
+      # Production behind an HTTPS reverse proxy: set all three to "true".
+      # COOKIE_SECURE adds the Secure flag on the session cookie, TRUST_PROXY
+      # lets the app read X-Forwarded-* from the proxy, FORCE_HTTPS redirects
+      # any plain-HTTP request to HTTPS.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      FORCE_HTTPS: ${FORCE_HTTPS:-false}
       UPLOAD_DIR: /data/uploads
     volumes:
       - uploads:/data/uploads

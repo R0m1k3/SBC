@@ -38,6 +38,11 @@ export const config = {
   cookieSecure: process.env.COOKIE_SECURE === 'true',
   // set to "true" only when running behind a reverse proxy (TLS termination)
   trustProxy: process.env.TRUST_PROXY === 'true',
+  // when "true" (production behind a TLS proxy), plain-HTTP requests coming
+  // through the proxy are 301-redirected to HTTPS. Direct requests without
+  // an X-Forwarded-Proto header (e.g. the container healthcheck) are never
+  // redirected, so this stays safe to enable.
+  forceHttps: process.env.FORCE_HTTPS === 'true',
   uploadDir: process.env.UPLOAD_DIR || '/data/uploads',
   staticDir: process.env.STATIC_DIR || new URL('../public', import.meta.url).pathname,
   adminInitialPassword: process.env.ADMIN_INITIAL_PASSWORD || '',

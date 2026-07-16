@@ -50,6 +50,13 @@ export default function Confidentialite() {
               <br /><em>Finalité :</em> annuaire public des entreprises membres. <em>Base légale :</em> exécution de l'adhésion ; la photo est publiée avec le consentement de la personne, qui peut la retirer à tout moment depuis son espace membre.
             </span>
           </div>
+          <div style={row}>
+            <span style={cellTitle}>Facturation des adhésions</span>
+            <span>
+              Identité, adresse de facturation, email, montants, moyen et date de paiement, numéro de facture.
+              <br /><em>Finalité :</em> émettre les factures d'adhésion, suivre les paiements et tenir la comptabilité. <em>Base légale :</em> obligation légale (comptable et fiscale) et exécution de l'adhésion.
+            </span>
+          </div>
           <div style={{ ...row, borderBottom: 'none' }}>
             <span style={cellTitle}>Espace membre</span>
             <span>
@@ -71,15 +78,17 @@ export default function Confidentialite() {
           Les demandes d'adhésion non abouties sont supprimées au plus tard 3 ans après leur dépôt.
           Les inscriptions aux rencontres sont conservées le temps de la saison en cours puis archivées
           à des fins de statistiques de fréquentation (nombre de participants uniquement).
-          Les comptes de connexion sont supprimés avec la fiche du membre.
+          Les factures et pièces comptables sont conservées 10 ans, conformément aux obligations
+          comptables et fiscales. Les comptes de connexion sont supprimés avec la fiche du membre.
         </p>
       </LegalSection>
 
       <LegalSection title="Destinataires et hébergement">
         <p>
-          Les données sont accessibles aux seuls administrateurs et modérateurs habilités de
-          l'association, soumis à une obligation de confidentialité. Les fiches de l'annuaire et les
-          photographies des rencontres sont, elles, publiées sur le site public.
+          Les données sont accessibles aux seuls administrateurs, trésoriers et modérateurs habilités de
+          l'association, soumis à une obligation de confidentialité ; les données comptables peuvent être
+          communiquées à l'expert-comptable et à l'administration fiscale le cas échéant. Les fiches de
+          l'annuaire et les photographies des rencontres sont, elles, publiées sur le site public.
         </p>
         <p>
           Les données sont hébergées par <LegalValue value={s.association_host_name} label="nom de l'hébergeur" />,{' '}

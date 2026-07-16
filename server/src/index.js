@@ -20,8 +20,28 @@ const app = express();
 app.disable('x-powered-by');
 if (config.trustProxy) app.set('trust proxy', 1);
 
+// Force HTTPS in production: redirect plain-HTTP requests that reach us
+// through the reverse proxy. Requests without an X-Forwarded-Proto header
+// (direct localhost calls such as the container healthcheck) are left
+// untouched so they keep working over HTTP.
+if (config.forceHttps) {
+  app.use((req, res, next) => {
+    const proto = req.headers['x-forwarded-proto'];
+    if (proto && proto.split(',')[0].trim() === 'http') {
+      return res.redirect(308, `https://${req.headers.host}${req.originalUrl}`);
+    }
+    next();
+  });
+}
+
 app.use(
   helmet({
+    // HSTS: tell browsers to only ever reach the site over HTTPS. Ignored
+    // by browsers on plain-HTTP responses, so it is safe to always send.
+    strictTransportSecurity: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+    },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],

@@ -9,6 +9,7 @@ import { UsersTab } from '../components/admin/AdminUsers.jsx';
 import { EmailCreatorTab } from '../components/admin/AdminEmail.jsx';
 import { RequestsTab } from '../components/admin/AdminRequests.jsx';
 import { BillingTab } from '../components/admin/AdminBilling.jsx';
+import { RgpdTab } from '../components/admin/AdminRgpd.jsx';
 
 // Moderators get members/membership requests/rencontres/inscriptions/rencontres passées
 // (create + edit, never delete) — everything else (dashboard, taxonomy,
@@ -25,6 +26,7 @@ const TABS = [
   { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
   { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
   { key: 'parametres', icon: '⚙', label: 'Paramètres', title: "Paramètres de l'association", roles: ['admin'] },
+  { key: 'rgpd', icon: '⚖', label: 'RGPD', title: 'Conformité RGPD', roles: ['admin'] },
   { key: 'emails', icon: '✉', label: "Créateur d'e-mail", title: "Créateur d'e-mail", roles: ['admin'] },
   { key: 'utilisateurs', icon: '⚿', label: 'Utilisateurs', title: 'Administrateurs, trésoriers & modérateurs', roles: ['admin'] },
 ];
@@ -161,6 +163,7 @@ export function AdminShell() {
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'contenu' && <ContenuTab />}
           {tab === 'parametres' && <ParametresTab />}
+          {tab === 'rgpd' && <RgpdTab />}
           {tab === 'emails' && <EmailCreatorTab />}
           {tab === 'utilisateurs' && <UsersTab />}
         </div>

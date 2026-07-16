@@ -22,6 +22,7 @@ import { createStaffUser, resetStaffAccess } from '../userAccess.js';
 import { AccessError } from '../errors.js';
 import { buildInvitationEmail } from '../emailTemplate.js';
 import { buildCustomEmail } from '../customEmailTemplate.js';
+import { buildProcessingRegister, buildImageConsentForm } from '../complianceDocuments.js';
 import { billingRouter } from './billing.js';
 
 export const adminRouter = Router();
@@ -291,6 +292,28 @@ adminRouter.post('/emails/preview', adminOnly, validate(customEmailSchema), asyn
     }
     const association = await loadAssociationSettings();
     res.json(buildCustomEmail({ content, baseUrl, association }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- GDPR compliance documents (admin only) ----------
+// Print-ready HTML documents prefilled from the association parameters:
+// the record of processing activities (art. 30 RGPD) and the image-rights
+// authorization form (adult / minor variant).
+adminRouter.get('/compliance/register', adminOnly, async (_req, res, next) => {
+  try {
+    const association = await loadAssociationSettings();
+    res.json(buildProcessingRegister({ association }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.get('/compliance/image-consent', adminOnly, async (req, res, next) => {
+  try {
+    const association = await loadAssociationSettings();
+    res.json(buildImageConsentForm({ association, minor: req.query.minor === '1' }));
   } catch (err) {
     next(err);
   }
