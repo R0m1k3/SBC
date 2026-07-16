@@ -64,7 +64,21 @@ export default function Annuaire() {
 
         <div className="grid-3">
           {filtered.map((m) => (
-            <div key={m.id} className="card" style={{ padding: 26, display: 'flex', flexDirection: 'column' }}>
+            <article
+              key={m.id}
+              className="card directory-member-card"
+              style={{ padding: 26, display: 'flex', flexDirection: 'column' }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Voir la fiche de ${m.nom}`}
+              onClick={() => setDetail(m)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setDetail(m);
+                }
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
                 <div className={m.logo_path ? '' : 'placeholder-pattern'} style={{ width: 64, height: 64, flexShrink: 0, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 9, color: '#a8a099', overflow: 'hidden', background: m.logo_path ? '#fff' : undefined }}>
                   {m.logo_path ? <img src={m.logo_path} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : 'logo'}
@@ -78,11 +92,10 @@ export default function Annuaire() {
                 <span className="badge-cat">{m.categorie || 'Non classée'}</span>
               </div>
               <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--gray)', flex: 1, marginBottom: 20 }}>{m.presentation}</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>
+              <div style={{ paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>
                 <span style={{ fontSize: 13, color: 'var(--gray-light)' }}>{m.dirigeant}</span>
-                <button className="btn-link" onClick={() => setDetail(m)}>Voir la fiche →</button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 

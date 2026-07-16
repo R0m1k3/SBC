@@ -87,6 +87,16 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 .badge-red { background: #F6E4E4; color: #B0322E; }
 .badge-cat { font-size: 11.5px; font-weight: 600; color: var(--gray); background: var(--beige); border-radius: 20px; padding: 5px 12px; display: inline-block; }
 
+.directory-member-card {
+  cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.directory-member-card:hover {
+  border-color: #CEC5BB; box-shadow: 0 14px 34px -26px rgba(27, 27, 27, .55); transform: translateY(-2px);
+}
+.directory-member-card:focus-visible {
+  outline: 3px solid rgba(193, 39, 45, .22); outline-offset: 3px; border-color: var(--red);
+}
+
 .chip { border-radius: 20px; font-size: 13.5px; padding: 9px 18px; border: 1px solid var(--input-border); background: #fff; color: var(--gray); font-weight: 500; }
 .chip.active { background: var(--red); color: #fff; border-color: var(--red); font-weight: 600; }
 
