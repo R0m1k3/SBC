@@ -30,6 +30,13 @@ function SettingsPanel({ season, settings, onSaved, onClose }) {
     non_partner_amount_ht: settings.non_partner_amount_ht ?? 0,
     payment_due_days: settings.payment_due_days ?? 30,
     iban: settings.iban || '',
+    bic: settings.bic || '',
+    rib_account_holder: settings.rib_account_holder || '',
+    rib_bank_name: settings.rib_bank_name || '',
+    rib_bank_code: settings.rib_bank_code || '',
+    rib_branch_code: settings.rib_branch_code || '',
+    rib_account_number: settings.rib_account_number || '',
+    rib_key: settings.rib_key || '',
     legal_mentions: settings.legal_mentions || '',
   });
   const [busy, setBusy] = useState(false);
@@ -74,11 +81,38 @@ function SettingsPanel({ season, settings, onSaved, onClose }) {
             </div>
           </label>
         </div>
-        <label className="field" style={{ marginTop: 14 }}>IBAN à afficher sur les factures
-          <input name="iban" value={form.iban} onChange={change} maxLength={42} placeholder="FR76…" />
-        </label>
-        <label className="field" style={{ marginTop: 14 }}>Mentions légales des factures
-          <textarea name="legal_mentions" value={form.legal_mentions} onChange={change} rows={4} maxLength={3000} placeholder="Conditions de règlement, pénalités de retard, indemnité forfaitaire…" />
+        <h4 style={{ fontSize: 13, fontWeight: 700, marginTop: 24, marginBottom: 12 }}>Coordonnées bancaires du RIB</h4>
+        <div className="grid-2" style={{ gap: 12 }}>
+          <label className="field">Titulaire du compte
+            <input name="rib_account_holder" value={form.rib_account_holder} onChange={change} maxLength={160} placeholder="SLUC Business Club" />
+          </label>
+          <label className="field">Banque / domiciliation
+            <input name="rib_bank_name" value={form.rib_bank_name} onChange={change} maxLength={160} placeholder="Nom et agence bancaire" />
+          </label>
+          <label className="field">IBAN
+            <input name="iban" value={form.iban} onChange={change} maxLength={42} placeholder="FR76…" />
+          </label>
+          <label className="field">BIC / SWIFT
+            <input name="bic" value={form.bic} onChange={change} maxLength={14} placeholder="XXXXXXXXXXX" />
+          </label>
+        </div>
+        <div className="grid-4" style={{ gap: 12, marginTop: 12 }}>
+          <label className="field">Code banque
+            <input name="rib_bank_code" value={form.rib_bank_code} onChange={change} maxLength={7} inputMode="numeric" placeholder="00000" />
+          </label>
+          <label className="field">Code guichet
+            <input name="rib_branch_code" value={form.rib_branch_code} onChange={change} maxLength={7} inputMode="numeric" placeholder="00000" />
+          </label>
+          <label className="field">N° de compte
+            <input name="rib_account_number" value={form.rib_account_number} onChange={change} maxLength={14} placeholder="00000000000" />
+          </label>
+          <label className="field">Clé RIB
+            <input name="rib_key" value={form.rib_key} onChange={change} maxLength={3} inputMode="numeric" placeholder="00" />
+          </label>
+        </div>
+        <label className="field" style={{ marginTop: 18 }}>Conditions complémentaires
+          <textarea name="legal_mentions" value={form.legal_mentions} onChange={change} rows={3} maxLength={3000} placeholder="Aucun escompte, pénalités de retard, indemnité forfaitaire…" />
+          <small style={{ color: 'var(--gray-light)', marginTop: 5 }}>La TVA, l’échéance et les modes de règlement sont déjà ajoutés automatiquement.</small>
         </label>
         {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
         <button type="submit" className="btn btn-red btn-sm" disabled={busy} style={{ marginTop: 18, fontSize: 14, padding: '12px 22px' }}>

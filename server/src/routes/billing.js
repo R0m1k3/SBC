@@ -11,7 +11,7 @@ import {
   idParam,
 } from '../schemas.js';
 import { associationSettings } from '../siteSettings.js';
-import { buildInvoicePdf, buildPaidMembersPdf, buildPaidMembersWorkbook } from '../billingDocuments.js';
+import { buildInvoicePdf, buildPaidMembersPdf, buildPaidMembersWorkbook, sanitizeLegalMentions } from '../billingDocuments.js';
 
 export const billingRouter = Router();
 billingRouter.use(requireAuth(['admin', 'treasurer']));
@@ -21,6 +21,13 @@ const DEFAULT_SETTINGS = {
   non_partner_amount_ht: 0,
   payment_due_days: 30,
   iban: '',
+  bic: '',
+  rib_account_holder: '',
+  rib_bank_name: '',
+  rib_bank_code: '',
+  rib_branch_code: '',
+  rib_account_number: '',
+  rib_key: '',
   legal_mentions: '',
 };
 
@@ -39,7 +46,10 @@ function numberRow(row) {
 
 async function loadSettings(season, client = { query }) {
   const result = await client.query('SELECT * FROM billing_season_settings WHERE season = $1', [season]);
-  return result.rows[0] ? { ...numberRow(result.rows[0]), configured: true } : { season, ...DEFAULT_SETTINGS, configured: false };
+  if (!result.rows[0]) return { season, ...DEFAULT_SETTINGS, configured: false };
+  const settings = numberRow(result.rows[0]);
+  settings.legal_mentions = sanitizeLegalMentions(settings.legal_mentions);
+  return { ...settings, configured: true };
 }
 
 async function loadPaidRows(season) {
@@ -112,21 +122,38 @@ billingRouter.get('/seasons/:season', validate(billingSeasonParam, 'params'), as
 billingRouter.put('/seasons/:season/settings', validate(billingSeasonParam, 'params'), validate(billingSettingsSchema), async (req, res, next) => {
   try {
     const d = req.data;
-    const iban = d.iban.replace(/\s/g, '').toUpperCase();
+    const compact = (value) => value.replace(/\s/g, '').toUpperCase();
+    const iban = compact(d.iban);
+    const bic = compact(d.bic);
+    const bankCode = compact(d.rib_bank_code);
+    const branchCode = compact(d.rib_branch_code);
+    const accountNumber = compact(d.rib_account_number);
+    const ribKey = compact(d.rib_key);
+    const legalMentions = sanitizeLegalMentions(d.legal_mentions);
     await query(
       `INSERT INTO billing_season_settings
-         (season, sluc_partner_amount_ht, non_partner_amount_ht, vat_rate, payment_due_days, iban, legal_mentions)
-       VALUES ($1, $2, $3, 0, $4, $5, $6)
+         (season, sluc_partner_amount_ht, non_partner_amount_ht, vat_rate, payment_due_days,
+          iban, bic, rib_account_holder, rib_bank_name, rib_bank_code, rib_branch_code,
+          rib_account_number, rib_key, legal_mentions)
+       VALUES ($1, $2, $3, 0, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        ON CONFLICT (season) DO UPDATE SET
          sluc_partner_amount_ht=EXCLUDED.sluc_partner_amount_ht,
          non_partner_amount_ht=EXCLUDED.non_partner_amount_ht,
          vat_rate=0,
          payment_due_days=EXCLUDED.payment_due_days,
          iban=EXCLUDED.iban,
+         bic=EXCLUDED.bic,
+         rib_account_holder=EXCLUDED.rib_account_holder,
+         rib_bank_name=EXCLUDED.rib_bank_name,
+         rib_bank_code=EXCLUDED.rib_bank_code,
+         rib_branch_code=EXCLUDED.rib_branch_code,
+         rib_account_number=EXCLUDED.rib_account_number,
+         rib_key=EXCLUDED.rib_key,
          legal_mentions=EXCLUDED.legal_mentions,
          updated_at=now()`,
       [req.params.season, d.sluc_partner_amount_ht, d.non_partner_amount_ht,
-       d.payment_due_days, iban, d.legal_mentions]
+       d.payment_due_days, iban, bic, d.rib_account_holder, d.rib_bank_name,
+       bankCode, branchCode, accountNumber, ribKey, legalMentions]
     );
     res.json({ settings: await loadSettings(req.params.season) });
   } catch (err) {
@@ -176,7 +203,14 @@ billingRouter.post('/seasons/:season/invoices', validate(billingSeasonParam, 'pa
     const issuerSnapshot = {
       ...issuer,
       iban: settings.iban,
-      legal_mentions: settings.legal_mentions,
+      bic: settings.bic,
+      rib_account_holder: settings.rib_account_holder,
+      rib_bank_name: settings.rib_bank_name,
+      rib_bank_code: settings.rib_bank_code,
+      rib_branch_code: settings.rib_branch_code,
+      rib_account_number: settings.rib_account_number,
+      rib_key: settings.rib_key,
+      legal_mentions: sanitizeLegalMentions(settings.legal_mentions),
     };
     let created = 0;
     for (const member of members.rows) {

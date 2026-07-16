@@ -196,11 +196,25 @@ CREATE TABLE IF NOT EXISTS billing_season_settings (
     vat_rate               NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (vat_rate = 0),
     payment_due_days       INTEGER NOT NULL DEFAULT 30 CHECK (payment_due_days BETWEEN 0 AND 365),
     iban                   TEXT NOT NULL DEFAULT '' CHECK (char_length(iban) <= 42),
+    bic                    TEXT NOT NULL DEFAULT '' CHECK (char_length(bic) <= 14),
+    rib_account_holder     TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_account_holder) <= 160),
+    rib_bank_name          TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_bank_name) <= 160),
+    rib_bank_code          TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_bank_code) <= 7),
+    rib_branch_code        TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_branch_code) <= 7),
+    rib_account_number     TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_account_number) <= 14),
+    rib_key                TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_key) <= 3),
     legal_mentions         TEXT NOT NULL DEFAULT '' CHECK (char_length(legal_mentions) <= 3000),
     created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ALTER TABLE billing_season_settings ALTER COLUMN vat_rate SET DEFAULT 0;
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS bic TEXT NOT NULL DEFAULT '' CHECK (char_length(bic) <= 14);
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS rib_account_holder TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_account_holder) <= 160);
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS rib_bank_name TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_bank_name) <= 160);
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS rib_bank_code TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_bank_code) <= 7);
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS rib_branch_code TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_branch_code) <= 7);
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS rib_account_number TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_account_number) <= 14);
+ALTER TABLE billing_season_settings ADD COLUMN IF NOT EXISTS rib_key TEXT NOT NULL DEFAULT '' CHECK (char_length(rib_key) <= 3);
 UPDATE billing_season_settings SET vat_rate = 0 WHERE vat_rate <> 0;
 ALTER TABLE billing_season_settings DROP CONSTRAINT IF EXISTS billing_season_settings_vat_rate_check;
 ALTER TABLE billing_season_settings ADD CONSTRAINT billing_season_settings_vat_rate_check CHECK (vat_rate = 0);

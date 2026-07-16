@@ -8,7 +8,7 @@ const INK = '#1B1B1B';
 const GRAY = '#6E675F';
 const LIGHT = '#F4F1EC';
 const VAT_EXEMPTION = 'TVA non applicable, article 293 B du CGI';
-const DEFAULT_PAYMENT_TERMS = 'Paiement à réception de facture. Aucun escompte pour règlement anticipé. En cas de retard, une indemnité forfaitaire de 40 EUR pour frais de recouvrement est due.';
+const DEFAULT_PAYMENT_TERMS = 'Aucun escompte pour règlement anticipé. En cas de retard, une indemnité forfaitaire de 40 EUR pour frais de recouvrement est due.';
 
 const logoCandidates = [
   fileURLToPath(new URL('../public/assets/logo.jpg', import.meta.url)),
@@ -26,6 +26,19 @@ const dateFr = (value) => {
 };
 const typeLabel = (value) => value === 'sluc_partner' ? 'Partenaire SLUC' : 'Non partenaire SLUC';
 const paymentLabel = (value) => ({ carte: 'Carte bleue', virement: 'Virement', cheque: 'Chèque' }[value] || '');
+
+export function sanitizeLegalMentions(value) {
+  return text(value)
+    .split(/\r?\n/)
+    .map((rawLine) => rawLine.trim())
+    .filter(Boolean)
+    .filter((line) => !/^facture en euros[.!]?$/i.test(line))
+    .filter((line) => !/^tva non applicable\b/i.test(line))
+    .filter((line) => !/^r[èe]glement\s*:/i.test(line))
+    .map((line) => line.replace(/^paiement\s+[àa]\s+r[ée]ception\s+de\s+facture\.?\s*/i, '').trim())
+    .filter(Boolean)
+    .join('\n');
+}
 
 function collectPdf(draw, options = {}) {
   return new Promise((resolve, reject) => {
@@ -65,10 +78,10 @@ export function buildInvoicePdf(invoice) {
     doc.font('Helvetica-Bold').fontSize(12).fillColor(INK)
       .text(text(issuer.association_name || 'Association'), 300, 44, { width: 247, align: 'right' });
     doc.font('Helvetica').fontSize(8.5).fillColor(GRAY);
-    drawMultiline(doc, issuer.association_address, 300, 63, 247, { align: 'right', height: 31, ellipsis: true });
-    if (issuer.association_email) doc.text(issuer.association_email, 300, 98, { width: 247, align: 'right' });
-    if (issuer.association_phone) doc.text(issuer.association_phone, 300, 111, { width: 247, align: 'right' });
-    if (issuer.association_siret) doc.text(`SIRET : ${issuer.association_siret}`, 300, 124, { width: 247, align: 'right' });
+    drawMultiline(doc, issuer.association_address, 300, 63, 247, { align: 'right', height: 37, ellipsis: true });
+    if (issuer.association_email) doc.text(issuer.association_email, 300, 102, { width: 247, align: 'right' });
+    if (issuer.association_phone) doc.text(issuer.association_phone, 300, 115, { width: 247, align: 'right' });
+    if (issuer.association_siret) doc.text(`SIRET : ${issuer.association_siret}`, 300, 128, { width: 247, align: 'right' });
     doc.moveTo(48, 145).lineTo(547, 145).lineWidth(2).strokeColor(RED).stroke();
 
     doc.font('Helvetica-Bold').fontSize(30).fillColor(INK).text('FACTURE', 48, 168, { width: 220 });
@@ -118,33 +131,43 @@ export function buildInvoicePdf(invoice) {
         ? 'Facture annulée.'
         : `Paiement attendu avant le ${dateFr(invoice.due_date)} par virement, chèque ou carte bleue.`;
     doc.font('Helvetica').fontSize(8.5).fillColor(GRAY).text(paymentStatus, 48, 655, { width: 499 });
-    if (issuer.iban) {
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(GRAY).text('IBAN', 48, 676);
-      doc.font('Helvetica-Bold').fontSize(10).fillColor(INK).text(text(issuer.iban), 80, 674, { width: 467, characterSpacing: 0.6 });
+    const ribValues = [issuer.iban, issuer.bic, issuer.rib_account_holder, issuer.rib_bank_name,
+      issuer.rib_bank_code, issuer.rib_branch_code, issuer.rib_account_number, issuer.rib_key];
+    if (ribValues.some(Boolean)) {
+      const ribY = 674;
+      doc.roundedRect(48, ribY, 499, 74, 4).fill(LIGHT);
+      doc.font('Helvetica-Bold').fontSize(7.5).fillColor(INK).text('COORDONNÉES BANCAIRES', 60, ribY + 9, { width: 130 });
+      const bankIdentity = [issuer.rib_account_holder, issuer.rib_bank_name].filter(Boolean).join(' - ');
+      doc.font('Helvetica').fontSize(7).fillColor(GRAY).text(bankIdentity, 195, ribY + 9, { width: 338, align: 'right', ellipsis: true });
+
+      const ribColumns = [
+        ['Code banque', issuer.rib_bank_code, 78],
+        ['Code guichet', issuer.rib_branch_code, 78],
+        ['N° de compte', issuer.rib_account_number, 128],
+        ['Clé RIB', issuer.rib_key, 58],
+        ['BIC / SWIFT', issuer.bic, 109],
+      ];
+      let ribX = 60;
+      ribColumns.forEach(([label, value, width]) => {
+        doc.font('Helvetica').fontSize(6).fillColor(GRAY).text(label.toUpperCase(), ribX, ribY + 27, { width });
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor(INK).text(text(value), ribX, ribY + 38, { width, ellipsis: true });
+        ribX += width;
+      });
+      doc.font('Helvetica').fontSize(6).fillColor(GRAY).text('IBAN', 60, ribY + 55, { width: 32 });
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(INK).text(text(issuer.iban), 92, ribY + 53, { width: 441, characterSpacing: 0.5, ellipsis: true });
     }
 
-    const legalMentions = text(issuer.legal_mentions || DEFAULT_PAYMENT_TERMS);
-    doc.font('Helvetica').fontSize(7.5);
-    const legalContinued = doc.heightOfString(legalMentions, { width: 499, lineGap: 1.5 }) > 38;
-    doc.moveTo(48, 705).lineTo(547, 705).lineWidth(1).strokeColor('#D9D3CB').stroke();
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(GRAY).text('CONDITIONS DE RÈGLEMENT', 48, 716);
-    doc.font('Helvetica').fontSize(7.5).fillColor(GRAY).text(
-      legalContinued ? 'Les conditions détaillées figurent en page suivante.' : legalMentions,
-      48,
-      729,
-      { width: 499, height: 38, lineGap: 1.5 }
-    );
-
-    const invoiceBottomMargin = doc.page.margins.bottom;
-    doc.page.margins.bottom = 0;
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(INK).text(text(issuer.association_name), 48, 783, { width: 499, align: 'center' });
+    const legalMentions = sanitizeLegalMentions(issuer.legal_mentions) || DEFAULT_PAYMENT_TERMS;
+    doc.font('Helvetica').fontSize(7);
+    const legalContinued = doc.heightOfString(legalMentions, { width: 499, lineGap: 1.2 }) > 28;
+    doc.moveTo(48, 759).lineTo(547, 759).lineWidth(1).strokeColor('#D9D3CB').stroke();
+    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(GRAY).text('CONDITIONS DE RÈGLEMENT', 48, 769);
     doc.font('Helvetica').fontSize(7).fillColor(GRAY).text(
-      [issuer.association_address, issuer.association_email, issuer.association_siret ? `SIRET ${issuer.association_siret}` : ''].filter(Boolean).join(' - ').replace(/\n/g, ' '),
+      legalContinued ? 'Les conditions complémentaires figurent en page suivante.' : legalMentions,
       48,
-      795,
-      { width: 499, align: 'center', ellipsis: true }
+      782,
+      { width: 499, height: 28, lineGap: 1.2 }
     );
-    doc.page.margins.bottom = invoiceBottomMargin;
 
     if (legalContinued) {
       doc.addPage();

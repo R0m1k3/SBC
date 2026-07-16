@@ -130,12 +130,23 @@ const iban = z.string().trim().max(42).refine(
   (value) => !value || /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(value.replace(/\s/g, '').toUpperCase()),
   'IBAN invalide'
 );
+const bankingCode = (regex, max, message) => z.string().trim().max(max).refine(
+  (value) => !value || regex.test(value.replace(/\s/g, '').toUpperCase()),
+  message
+).optional().default('');
 
 export const billingSettingsSchema = z.object({
   sluc_partner_amount_ht: z.coerce.number().min(0).max(1000000),
   non_partner_amount_ht: z.coerce.number().min(0).max(1000000),
   payment_due_days: z.coerce.number().int().min(0).max(365),
   iban,
+  bic: bankingCode(/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/, 14, 'BIC invalide'),
+  rib_account_holder: trimmed(160).optional().default(''),
+  rib_bank_name: trimmed(160).optional().default(''),
+  rib_bank_code: bankingCode(/^\d{5}$/, 7, 'le code banque doit contenir 5 chiffres'),
+  rib_branch_code: bankingCode(/^\d{5}$/, 7, 'le code guichet doit contenir 5 chiffres'),
+  rib_account_number: bankingCode(/^[A-Z0-9]{11}$/, 14, 'le numéro de compte doit contenir 11 caractères'),
+  rib_key: bankingCode(/^\d{2}$/, 3, 'la clé RIB doit contenir 2 chiffres'),
   legal_mentions: trimmed(3000).optional().default(''),
 });
 
