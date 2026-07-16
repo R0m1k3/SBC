@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api.js';
+import { ASSOCIATION_DEFAULTS, associationSettings } from '../../lib/siteSettings.js';
 import ImageSlot from '../ImageSlot.jsx';
 
 export function CategoriesTab() {
@@ -195,5 +196,120 @@ export function ContenuTab() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function ParametresTab() {
+  const [settings, setSettings] = useState(ASSOCIATION_DEFAULTS);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    api.get('/api/public/bootstrap')
+      .then((data) => setSettings(associationSettings(data.content)))
+      .catch((err) => setError(err.message));
+  }, []);
+
+  const onChange = (event) => {
+    setSettings({ ...settings, [event.target.name]: event.target.value });
+    setSaved(false);
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
+    setError('');
+    try {
+      const body = Object.fromEntries(
+        Object.keys(ASSOCIATION_DEFAULTS).map((key) => [key, settings[key] || ''])
+      );
+      await api.put('/api/admin/content', body);
+      setSaved(true);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <form onSubmit={save} style={{ maxWidth: 980, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div className="card" style={{ borderRadius: 6, padding: 26 }}>
+        <h3 className="serif" style={{ fontSize: 19, fontWeight: 600, marginBottom: 8 }}>Identité et coordonnées</h3>
+        <p style={{ fontSize: 13.5, color: 'var(--gray-light)', lineHeight: 1.55, marginBottom: 22 }}>
+          Ces informations sont reprises dans le site public et les e-mails générés.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <label className="field">Nom officiel de l'association
+            <input name="association_name" value={settings.association_name} onChange={onChange} required maxLength={160} />
+          </label>
+          <label className="field">Adresse
+            <textarea name="association_address" value={settings.association_address} onChange={onChange} rows={3} maxLength={500} placeholder="Adresse complète" />
+          </label>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">E-mail
+              <input name="association_email" type="email" value={settings.association_email} onChange={onChange} maxLength={254} />
+            </label>
+            <label className="field">Téléphone
+              <input name="association_phone" type="tel" value={settings.association_phone} onChange={onChange} maxLength={40} />
+            </label>
+          </div>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">Contact principal
+              <input name="association_contact" value={settings.association_contact} onChange={onChange} maxLength={160} placeholder="Nom et fonction" />
+            </label>
+            <label className="field">Site web
+              <input name="association_website" type="url" value={settings.association_website} onChange={onChange} maxLength={300} placeholder="https://…" />
+            </label>
+          </div>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">Page Facebook
+              <input name="association_facebook_url" type="url" value={settings.association_facebook_url} onChange={onChange} maxLength={500} />
+            </label>
+            <label className="field">Page LinkedIn
+              <input name="association_linkedin_url" type="url" value={settings.association_linkedin_url} onChange={onChange} maxLength={500} />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ borderRadius: 6, padding: 26 }}>
+        <h3 className="serif" style={{ fontSize: 19, fontWeight: 600, marginBottom: 8 }}>Gouvernance</h3>
+        <p style={{ fontSize: 13.5, color: 'var(--gray-light)', lineHeight: 1.55, marginBottom: 22 }}>
+          Laissez un poste vide pour ne pas l'afficher sur la page Association.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">Président ou présidente
+              <input name="association_president" value={settings.association_president} onChange={onChange} maxLength={160} />
+            </label>
+            <label className="field">Vice-président ou vice-présidente
+              <input name="association_vice_president" value={settings.association_vice_president} onChange={onChange} maxLength={160} />
+            </label>
+          </div>
+          <div className="grid-2" style={{ gap: 12 }}>
+            <label className="field">Trésorier ou trésorière
+              <input name="association_treasurer" value={settings.association_treasurer} onChange={onChange} maxLength={160} />
+            </label>
+            <label className="field">Secrétaire
+              <input name="association_secretary" value={settings.association_secretary} onChange={onChange} maxLength={160} />
+            </label>
+          </div>
+          <label className="field">Membres du conseil d'administration
+            <textarea
+              name="association_board_members"
+              value={settings.association_board_members}
+              onChange={onChange}
+              rows={6}
+              maxLength={3000}
+              placeholder="Une personne par ligne"
+            />
+          </label>
+        </div>
+      </div>
+
+      {error && <p className="error-text">{error}</p>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button type="submit" className="btn btn-red btn-sm" style={{ fontSize: 14, padding: '12px 22px' }}>Enregistrer les paramètres</button>
+        {saved && <span className="success-text">✓ Paramètres enregistrés</span>}
+      </div>
+    </form>
   );
 }

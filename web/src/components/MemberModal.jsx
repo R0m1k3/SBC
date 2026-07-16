@@ -2,6 +2,9 @@ import Modal from './Modal.jsx';
 
 export default function MemberModal({ member, onClose }) {
   if (!member) return null;
+  const encodedAddress = member.adresse ? encodeURIComponent(member.adresse) : '';
+  const mapUrl = encodedAddress ? `https://www.google.com/maps?q=${encodedAddress}&output=embed` : '';
+  const mapLink = encodedAddress ? `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` : '';
   return (
     <Modal onClose={onClose} maxWidth={760}>
       <div style={{ position: 'relative', background: 'var(--dark)', color: '#fff', padding: '32px 36px', display: 'flex', alignItems: 'center', gap: 22 }}>
@@ -45,7 +48,7 @@ export default function MemberModal({ member, onClose }) {
         <p style={{ fontSize: 15, lineHeight: 1.7, color: 'var(--gray)', marginBottom: 26 }}>{member.presentation}</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, borderTop: '1px solid var(--border-soft)', paddingTop: 22 }}>
-          {[['Email', member.email], ['Tél', member.tel], ['Site', member.site]].map(([label, value]) =>
+          {[['Adresse', member.adresse], ['Email', member.email], ['Tél', member.tel], ['Site', member.site]].map(([label, value]) =>
             value ? (
               <div key={label} style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 14 }}>
                 <span style={{ width: 64, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--gray-light)', fontWeight: 600 }}>
@@ -56,6 +59,24 @@ export default function MemberModal({ member, onClose }) {
             ) : null
           )}
         </div>
+        {member.adresse && (
+          <div style={{ marginTop: 26 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
+              <h3 className="serif" style={{ fontSize: 20, fontWeight: 600 }}>Situation géographique</h3>
+              <a href={mapLink} target="_blank" rel="noreferrer" className="btn-link" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                Ouvrir la carte →
+              </a>
+            </div>
+            <iframe
+              title={`Carte de ${member.nom}`}
+              src={mapUrl}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              style={{ width: '100%', height: 280, border: 0, borderRadius: 6, display: 'block' }}
+              allowFullScreen
+            />
+          </div>
+        )}
         {member.email && (
           <a href={`mailto:${member.email}`} style={{ textDecoration: 'none' }}>
             <button className="btn btn-dark btn-sm" style={{ marginTop: 26, padding: '13px 24px', fontSize: 14 }}>

@@ -11,7 +11,7 @@ memberRouter.use(requireAuth('member'));
 
 const PROFILE_SQL = `
   SELECT m.id, m.nom, m.secteur, m.categorie_id, c.name AS categorie, m.dirigeant,
-         m.adhesion, m.email, m.tel, m.site, m.presentation, m.valide,
+         m.adhesion, m.email, m.tel, m.site, m.adresse, m.presentation, m.valide,
          m.logo_path, m.photo_path
     FROM members m LEFT JOIN categories c ON c.id = m.categorie_id
    WHERE m.id = $1`;
@@ -28,15 +28,32 @@ memberRouter.get('/profile', async (req, res, next) => {
 
 memberRouter.put('/profile', validate(memberProfileSchema), async (req, res, next) => {
   try {
-    const { nom, secteur, categorie_id, dirigeant, email, tel, site, presentation } = req.data;
+    const { nom, secteur, categorie_id, dirigeant, email, tel, site, adresse, presentation } = req.data;
     await query(
       `UPDATE members SET nom=$1, secteur=$2, categorie_id=$3, dirigeant=$4, email=$5,
-              tel=$6, site=$7, presentation=$8, updated_at=now()
-        WHERE id=$9`,
-      [nom, secteur, categorie_id ?? null, dirigeant, email || null, tel, site, presentation, req.user.memberId]
+              tel=$6, site=$7, adresse=$8, presentation=$9, updated_at=now()
+        WHERE id=$10`,
+      [nom, secteur, categorie_id ?? null, dirigeant, email || null, tel, site, adresse, presentation, req.user.memberId]
     );
     const result = await query(PROFILE_SQL, [req.user.memberId]);
     res.json({ member: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+memberRouter.get('/inscriptions', async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT i.rencontre_id, COUNT(*)::int AS participants,
+              bool_and(i.statut = 'confirmee') AS confirmee
+         FROM inscriptions i
+         JOIN rencontres r ON r.id = i.rencontre_id
+        WHERE i.member_id = $1 AND r.date_renc >= CURRENT_DATE
+        GROUP BY i.rencontre_id`,
+      [req.user.memberId]
+    );
+    res.json({ inscriptions: result.rows });
   } catch (err) {
     next(err);
   }

@@ -1,3 +1,5 @@
+import { associationSettings } from './siteSettings.js';
+
 function esc(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -33,7 +35,8 @@ function ctaButton(url, label) {
     </table>`;
 }
 
-export function buildCustomEmail({ content, baseUrl }) {
+export function buildCustomEmail({ content, baseUrl, association = {} }) {
+  const settings = associationSettings(association);
   const logoUrl = `${baseUrl}/assets/logo.jpg`;
   const button = ctaButton(content.buttonUrl, content.buttonLabel);
   const html = `<!doctype html>
@@ -55,10 +58,9 @@ export function buildCustomEmail({ content, baseUrl }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:100%;max-width:620px;background-color:#FFFFFF;border:1px solid #E7E2DB;border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;">
   <tr><td bgcolor="#161514" style="background-color:#161514;padding:26px 40px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr>
-      <td width="52" valign="middle"><img src="${esc(logoUrl)}" width="52" height="52" alt="SLUC Business Club Nancy" style="display:block;background-color:#FFFFFF;"></td>
+      <td width="52" valign="middle"><img src="${esc(logoUrl)}" width="52" height="52" alt="${esc(settings.association_name)}" style="display:block;background-color:#FFFFFF;"></td>
       <td valign="middle" style="padding-left:16px;">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#FFFFFF;line-height:22px;">Business Club</div>
-        <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#E0777A;font-weight:bold;line-height:16px;">SLUC Nancy</div>
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#FFFFFF;line-height:22px;">${esc(settings.association_name)}</div>
       </td>
     </tr></table>
   </td></tr>
@@ -70,8 +72,8 @@ export function buildCustomEmail({ content, baseUrl }) {
   ${button ? `<tr><td align="center" style="padding:18px 40px 12px;">${button}</td></tr>` : ''}
   ${content.signature ? `<tr><td style="padding:24px 40px 38px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:26px;color:#1B1B1B;">${lines(content.signature)}</td></tr>` : '<tr><td height="26" style="height:26px;line-height:26px;">&nbsp;</td></tr>'}
   <tr><td bgcolor="#0F0E0D" style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:22px;">
-    Business Club SLUC Nancy &middot; Palais des Sports Jean Weille, Nancy<br>
-    <a href="mailto:contact@sluc-businessclub.fr" style="color:#E0777A;text-decoration:none;">contact@sluc-businessclub.fr</a>
+    ${esc(settings.association_name)}${settings.association_address ? ` &middot; ${lines(settings.association_address)}` : ''}<br>
+    ${settings.association_contact ? `${esc(settings.association_contact)} &middot; ` : ''}${settings.association_email ? `<a href="mailto:${esc(settings.association_email)}" style="color:#E0777A;text-decoration:none;">${esc(settings.association_email)}</a>` : ''}${settings.association_phone ? ` &middot; ${esc(settings.association_phone)}` : ''}
   </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->

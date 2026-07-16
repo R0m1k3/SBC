@@ -1,8 +1,12 @@
 import { Link, NavLink } from 'react-router-dom';
+import { usePublicData } from '../lib/usePublic.js';
+import { associationSettings } from '../lib/siteSettings.js';
 
 const navLinkClass = ({ isActive }) => `nav-btn${isActive ? ' active' : ''}`;
 
 export default function Header() {
+  const { data } = usePublicData();
+  const settings = associationSettings(data?.content);
   return (
     <header
       style={{
@@ -16,12 +20,9 @@ export default function Header() {
         style={{ minHeight: 76, paddingTop: 12, paddingBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}
       >
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none' }}>
-          <img src="/assets/logo.jpg" alt="SLUC Business Club Nancy" style={{ height: 50, width: 'auto', display: 'block' }} />
-          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.05 }}>
-            <span className="serif" style={{ fontSize: 19, fontWeight: 600, color: 'var(--ink)' }}>Business Club</span>
-            <span style={{ fontSize: 10, letterSpacing: '.22em', textTransform: 'uppercase', color: 'var(--red-dark)', fontWeight: 600 }}>
-              SLUC Nancy
-            </span>
+          <img src="/assets/logo.jpg" alt={settings.association_name} style={{ height: 50, width: 'auto', display: 'block' }} />
+          <span className="serif" style={{ maxWidth: 220, fontSize: 18, fontWeight: 600, lineHeight: 1.12, color: 'var(--ink)' }}>
+            {settings.association_name}
           </span>
         </Link>
         <nav className="site-nav" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>

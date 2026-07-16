@@ -1,3 +1,6 @@
+import { usePublicData } from '../lib/usePublic.js';
+import { associationSettings } from '../lib/siteSettings.js';
+
 const VALUES = [
   { t: 'Réseau', d: "Un carnet d'adresses vivant, nourri par des rencontres régulières et de vraies affinités." },
   { t: 'Convivialité', d: "Des moments d'échange chaleureux, où les relations se nouent avant les contrats." },
@@ -20,6 +23,20 @@ const STATS = [
 ];
 
 export default function Association() {
+  const { data } = usePublicData();
+  const settings = associationSettings(data?.content);
+  const officers = [
+    ['Vice-présidence', settings.association_vice_president],
+    ['Trésorerie', settings.association_treasurer],
+    ['Secrétariat', settings.association_secretary],
+  ].filter(([, name]) => name);
+  const boardMembers = settings.association_board_members
+    .split(/\r?\n/)
+    .map((name) => name.trim())
+    .filter(Boolean);
+  const hasContact = settings.association_address || settings.association_email
+    || settings.association_phone || settings.association_contact;
+
   return (
     <main>
       <section style={{ background: 'var(--dark)', color: '#fff' }}>
@@ -29,7 +46,7 @@ export default function Association() {
             Trente ans à réunir le sport<br />et l'entreprise.
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.65, color: '#B7AFA6', maxWidth: 620, margin: '0 auto' }}>
-            Le Business Club est l'association des partenaires économiques du SLUC Nancy Basket.
+            {settings.association_name} est l'association des partenaires économiques du SLUC Nancy Basket.
             Une communauté de dirigeants qui partagent les valeurs du haut niveau.
           </p>
         </div>
@@ -71,14 +88,14 @@ export default function Association() {
       </section>
 
       <section style={{ background: 'var(--beige)', marginTop: 56, padding: '90px 0' }}>
-        <div className="hero-grid" style={{ maxWidth: 980, margin: '0 auto', padding: '0 32px', display: 'grid', gridTemplateColumns: '.8fr 1.2fr', gap: 56, alignItems: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
+        <div className="hero-grid" style={{ maxWidth: 980, margin: '0 auto', padding: '0 32px', display: 'grid', gridTemplateColumns: settings.association_president ? '.8fr 1.2fr' : '1fr', gap: 56, alignItems: 'center' }}>
+          {settings.association_president && <div style={{ textAlign: 'center' }}>
             <div style={{ aspectRatio: '1/1', borderRadius: 6, background: 'repeating-linear-gradient(135deg,#e4dfd8 0 12px,#eeeae3 12px 24px)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'monospace', fontSize: 11, color: '#a8a099', marginBottom: 16 }}>
               portrait
             </div>
-            <div className="serif" style={{ fontSize: 20, fontWeight: 600 }}>Jean-Marc Lefèvre</div>
-            <div style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 2 }}>Président du Business Club</div>
-          </div>
+            <div className="serif" style={{ fontSize: 20, fontWeight: 600 }}>{settings.association_president}</div>
+            <div style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 2 }}>Présidence de l'association</div>
+          </div>}
           <div>
             <div className="serif" style={{ fontSize: 60, color: 'var(--red)', lineHeight: 0.5, height: 32 }}>“</div>
             <p className="serif" style={{ fontSize: 26, lineHeight: 1.45, fontWeight: 400, marginBottom: 22 }}>
@@ -92,6 +109,48 @@ export default function Association() {
           </div>
         </div>
       </section>
+
+      {(officers.length > 0 || boardMembers.length > 0) && (
+        <section style={{ maxWidth: 1080, margin: '0 auto', padding: '90px 32px 30px' }}>
+          <div className="kicker" style={{ marginBottom: 14 }}>Gouvernance</div>
+          <h2 className="serif" style={{ fontWeight: 500, fontSize: 38, marginBottom: 34 }}>Le conseil d'administration</h2>
+          {officers.length > 0 && (
+            <div className="grid-3" style={{ marginBottom: boardMembers.length ? 38 : 0 }}>
+              {officers.map(([role, name]) => (
+                <div key={role} style={{ borderTop: '3px solid var(--red)', paddingTop: 18 }}>
+                  <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-light)', fontWeight: 600, marginBottom: 8 }}>{role}</div>
+                  <div className="serif" style={{ fontSize: 21, fontWeight: 600 }}>{name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {boardMembers.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+              <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--gray-light)', fontWeight: 600, marginBottom: 16 }}>Membres du CA</div>
+              <div className="grid-3" style={{ gap: 12 }}>
+                {boardMembers.map((name, index) => <div key={`${name}-${index}`} style={{ fontSize: 15, fontWeight: 600 }}>{name}</div>)}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {hasContact && (
+        <section style={{ maxWidth: 1080, margin: '0 auto', padding: '80px 32px 30px' }}>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 44, display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 50 }} className="hero-grid">
+            <div>
+              <div className="kicker" style={{ marginBottom: 14 }}>Contact</div>
+              <h2 className="serif" style={{ fontWeight: 500, fontSize: 36 }}>Nous contacter</h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 15, lineHeight: 1.6 }}>
+              {settings.association_contact && <strong>{settings.association_contact}</strong>}
+              {settings.association_address && <span style={{ whiteSpace: 'pre-line', color: 'var(--gray)' }}>{settings.association_address}</span>}
+              {settings.association_email && <a className="btn-link" href={`mailto:${settings.association_email}`}>{settings.association_email}</a>}
+              {settings.association_phone && <a className="btn-link" href={`tel:${settings.association_phone.replace(/[^+\d]/g, '')}`}>{settings.association_phone}</a>}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section style={{ maxWidth: 1080, margin: '0 auto', padding: '96px 32px' }}>
         <div style={{ textAlign: 'center', marginBottom: 52 }}>

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS members (
     email        CITEXT CHECK (char_length(email) <= 254),
     tel          TEXT CHECK (char_length(tel) <= 30),
     site         TEXT CHECK (char_length(site) <= 200),
+    adresse      TEXT CHECK (char_length(adresse) <= 300),
     presentation TEXT NOT NULL DEFAULT '' CHECK (char_length(presentation) <= 2000),
     valide       BOOLEAN NOT NULL DEFAULT false,
     logo_path    TEXT,
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS members (
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE members ADD COLUMN IF NOT EXISTS adresse TEXT CHECK (char_length(adresse) <= 300);
 
 CREATE TABLE IF NOT EXISTS users (
     id                   SERIAL PRIMARY KEY,

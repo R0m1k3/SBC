@@ -39,6 +39,7 @@ export const memberProfileSchema = z.object({
   email: trimmed(254).email().or(z.literal('')).optional().default(''),
   tel: trimmed(30).optional().default(''),
   site: trimmed(200).optional().default(''),
+  adresse: trimmed(300).optional().default(''),
   presentation: trimmed(2000).optional().default(''),
 });
 
@@ -95,6 +96,19 @@ export const roleChangeSchema = z.object({ role: staffRoleEnum });
 export const contentSchema = z.object({
   hero_quote_text: trimmed(300).optional(),
   hero_quote_author: trimmed(120).optional(),
+  association_name: trimmed(160, 1).optional(),
+  association_address: trimmed(500).optional(),
+  association_email: trimmed(254).email().or(z.literal('')).optional(),
+  association_phone: trimmed(40).optional(),
+  association_contact: trimmed(160).optional(),
+  association_website: z.string().trim().url().max(300).or(z.literal('')).optional(),
+  association_facebook_url: z.string().trim().url().max(500).or(z.literal('')).optional(),
+  association_linkedin_url: z.string().trim().url().max(500).or(z.literal('')).optional(),
+  association_president: trimmed(160).optional(),
+  association_vice_president: trimmed(160).optional(),
+  association_treasurer: trimmed(160).optional(),
+  association_secretary: trimmed(160).optional(),
+  association_board_members: trimmed(3000).optional(),
 });
 
 // Invitation email composer: every text zone is optional — absent fields

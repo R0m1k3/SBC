@@ -2,15 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api.js';
 import { copyRichEmail } from '../../lib/emailClipboard.js';
 import { downloadOutlookDraft } from '../../lib/outlookDraft.js';
+import { associationSettings } from '../../lib/siteSettings.js';
 
+const defaultAssociation = associationSettings();
 const INITIAL = {
-  subject: 'Actualités du Business Club SLUC Nancy',
-  kicker: 'Business Club · SLUC Nancy',
+  subject: `Actualités de ${defaultAssociation.association_name}`,
+  kicker: defaultAssociation.association_name,
   title: 'Votre titre ici',
   body: "Bonjour,\n\nRédigez ici votre message. Vous pouvez créer plusieurs paragraphes en laissant une ligne vide.\n\nLe modèle conserve automatiquement l'identité visuelle du Business Club.",
   buttonLabel: 'Découvrir',
   buttonUrl: window.location.origin,
-  signature: "À très bientôt,\nL'équipe du Business Club SLUC Nancy",
+  signature: `À très bientôt,\nL'équipe de ${defaultAssociation.association_name}`,
 };
 
 export function EmailCreatorTab() {
@@ -19,6 +21,18 @@ export function EmailCreatorTab() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
   const requestId = useRef(0);
+
+  useEffect(() => {
+    api.get('/api/public/bootstrap').then((result) => {
+      const settings = associationSettings(result.content);
+      setForm((current) => ({
+        ...current,
+        subject: `Actualités de ${settings.association_name}`,
+        kicker: settings.association_name,
+        signature: `À très bientôt,\nL'équipe de ${settings.association_name}`,
+      }));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const id = ++requestId.current;

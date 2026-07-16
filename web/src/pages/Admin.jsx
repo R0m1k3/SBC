@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext.jsx';
 import { api, dateParts, statutLabel } from '../lib/api.js';
 import { MembersTab, RencontresTab, InscriptionsTab } from '../components/admin/AdminTabs.jsx';
-import { CategoriesTab, ContenuTab } from '../components/admin/AdminContent.jsx';
+import { CategoriesTab, ContenuTab, ParametresTab } from '../components/admin/AdminContent.jsx';
 import { PastEventsTab } from '../components/admin/AdminPast.jsx';
 import { UsersTab } from '../components/admin/AdminUsers.jsx';
 import { EmailCreatorTab } from '../components/admin/AdminEmail.jsx';
@@ -22,6 +22,7 @@ const TABS = [
   { key: 'inscriptions', icon: '✎', label: 'Inscriptions', title: 'Inscriptions', roles: ['admin', 'moderator'] },
   { key: 'categories', icon: '☲', label: 'Catégories', title: 'Catégories', roles: ['admin'] },
   { key: 'contenu', icon: '▧', label: 'Contenu du site', title: 'Contenu du site', roles: ['admin'] },
+  { key: 'parametres', icon: '⚙', label: 'Paramètres', title: "Paramètres de l'association", roles: ['admin'] },
   { key: 'emails', icon: '✉', label: "Créateur d'e-mail", title: "Créateur d'e-mail", roles: ['admin'] },
   { key: 'utilisateurs', icon: '⚿', label: 'Administrateurs', title: 'Administrateurs & modérateurs', roles: ['admin'] },
 ];
@@ -155,6 +156,7 @@ export function AdminShell() {
           {tab === 'inscriptions' && <InscriptionsTab />}
           {tab === 'categories' && <CategoriesTab />}
           {tab === 'contenu' && <ContenuTab />}
+          {tab === 'parametres' && <ParametresTab />}
           {tab === 'emails' && <EmailCreatorTab />}
           {tab === 'utilisateurs' && <UsersTab />}
         </div>

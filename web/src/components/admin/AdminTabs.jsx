@@ -6,14 +6,15 @@ import { useAuth } from '../../lib/AuthContext.jsx';
 import Modal from '../Modal.jsx';
 import ImageSlot from '../ImageSlot.jsx';
 import { AccessCell, CredentialsModal } from './AccessControls.jsx';
+import { associationSettings } from '../../lib/siteSettings.js';
 
 /* ---------------- Members ---------------- */
 
 function MemberFormModal({ member, categories, onClose, onSaved }) {
   const [form, setForm] = useState(
     member
-      ? { ...member, email: member.email || '', tel: member.tel || '', site: member.site || '', presentation: member.presentation || '' }
-      : { nom: '', secteur: '', categorie_id: categories[0]?.id ?? null, dirigeant: '', email: '', tel: '', site: '', presentation: '' }
+      ? { ...member, email: member.email || '', tel: member.tel || '', site: member.site || '', adresse: member.adresse || '', presentation: member.presentation || '' }
+      : { nom: '', secteur: '', categorie_id: categories[0]?.id ?? null, dirigeant: '', email: '', tel: '', site: '', adresse: '', presentation: '' }
   );
   const [error, setError] = useState('');
 
@@ -28,7 +29,7 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
     const body = {
       nom: form.nom, secteur: form.secteur, categorie_id: form.categorie_id,
       dirigeant: form.dirigeant, email: form.email, tel: form.tel,
-      site: form.site, presentation: form.presentation,
+      site: form.site, adresse: form.adresse, presentation: form.presentation,
     };
     try {
       if (member) {
@@ -74,6 +75,9 @@ function MemberFormModal({ member, categories, onClose, onSaved }) {
           </div>
           <label className="field">Site web
             <input name="site" value={form.site} onChange={onChange} maxLength={200} />
+          </label>
+          <label className="field">Adresse de l'entreprise
+            <input name="adresse" value={form.adresse} onChange={onChange} maxLength={300} placeholder="Numéro, rue, code postal et ville" />
           </label>
           <label className="field">Présentation
             <textarea name="presentation" value={form.presentation} onChange={onChange} rows={3} maxLength={2000} />
@@ -481,7 +485,7 @@ function EmailModal({ renc, onClose }) {
   );
 }
 
-function ParticipantsModal({ renc, onClose, onEdit, onCancel, refreshKey }) {
+function ParticipantsModal({ renc, associationName, onClose, onEdit, onCancel, refreshKey }) {
   const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const { jour, mois } = dateParts(renc.date_renc);
@@ -519,7 +523,7 @@ function ParticipantsModal({ renc, onClose, onEdit, onCancel, refreshKey }) {
       + '<style>body{font-family:Arial,Helvetica,sans-serif;color:#1B1B1B;padding:32px}h1{font-size:22px;margin:0 0 4px}.meta{color:#666;font-size:13px;margin-bottom:20px}'
       + 'table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #ddd}th{background:#f4f1ec;text-transform:uppercase;font-size:11px;letter-spacing:.05em}'
       + '.brand{color:#C1272D;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px}</style></head><body>'
-      + '<div class="brand">Business Club SLUC Nancy</div>'
+      + `<div class="brand">${escHtml(associationName)}</div>`
       + `<h1>${escHtml(renc.titre)}</h1><div class="meta">${escHtml(meta)} — ${rows.length} inscrits</div>`
       + '<table><thead><tr><th>#</th><th>Participant</th><th>Entreprise</th><th>Email</th><th>Téléphone</th><th>Statut</th></tr></thead><tbody>'
       + body + '</tbody></table></body></html>';
@@ -581,6 +585,7 @@ export function RencontresTab() {
   const [editInscr, setEditInscr] = useState(null);
   const [cancelInscr, setCancelInscr] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [associationName, setAssociationName] = useState(associationSettings().association_name);
 
   const reload = () => {
     api.get('/api/admin/rencontres').then((d) => setRencontres(d.rencontres)).catch(() => {});
@@ -589,6 +594,9 @@ export function RencontresTab() {
 
   useEffect(() => {
     reload();
+    api.get('/api/public/bootstrap')
+      .then((data) => setAssociationName(associationSettings(data.content).association_name))
+      .catch(() => {});
   }, []);
 
   return (
@@ -643,6 +651,7 @@ export function RencontresTab() {
       {participantsRenc && (
         <ParticipantsModal
           renc={participantsRenc}
+          associationName={associationName}
           refreshKey={refreshKey}
           onClose={() => setParticipantsRenc(null)}
           onEdit={setEditInscr}

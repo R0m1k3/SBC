@@ -14,7 +14,7 @@ publicRouter.get('/bootstrap', async (_req, res, next) => {
       query('SELECT key, value FROM site_content'),
       query('SELECT id, name FROM categories ORDER BY id'),
       query(
-        `SELECT m.id, m.nom, m.secteur, m.dirigeant, m.adhesion, m.email, m.tel, m.site,
+        `SELECT m.id, m.nom, m.secteur, m.dirigeant, m.adhesion, m.email, m.tel, m.site, m.adresse,
                 m.presentation, m.logo_path, m.photo_path, c.name AS categorie
            FROM members m LEFT JOIN categories c ON c.id = m.categorie_id
           WHERE m.valide = true ORDER BY m.nom`

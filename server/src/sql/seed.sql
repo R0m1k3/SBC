@@ -58,7 +58,20 @@ INSERT INTO demandes_adhesion (nom, fonction, entreprise, email) VALUES
 INSERT INTO site_content (key, value) VALUES
   ('hero_quote_text', 'On ne réussit jamais seul.'),
   ('hero_quote_author', 'L''esprit du Club'),
-  ('hero_photo', '')
+  ('hero_photo', ''),
+  ('association_name', 'Business Club SLUC Nancy'),
+  ('association_address', E'Palais des Sports Jean Weille\nNancy (54)'),
+  ('association_email', 'contact@sluc-businessclub.fr'),
+  ('association_phone', '+33 3 83 00 00 00'),
+  ('association_contact', ''),
+  ('association_website', ''),
+  ('association_facebook_url', 'https://www.facebook.com/search/top?q=sluc%20business%20club'),
+  ('association_linkedin_url', 'https://www.linkedin.com/company/club-affaires-stanislas/posts/?feedView=all'),
+  ('association_president', 'Jean-Marc Lefèvre'),
+  ('association_vice_president', ''),
+  ('association_treasurer', ''),
+  ('association_secretary', ''),
+  ('association_board_members', '')
 ON CONFLICT (key) DO NOTHING;
 
 -- Accounts: created locked ('*seed*'); real passwords are applied at startup

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { usePublicData } from '../lib/usePublic.js';
 import MemberModal from '../components/MemberModal.jsx';
+import { associationSettings } from '../lib/siteSettings.js';
 
 export default function Annuaire() {
   const { data } = usePublicData();
@@ -10,12 +11,13 @@ export default function Annuaire() {
 
   const members = data?.members ?? [];
   const categories = data?.categories ?? [];
+  const settings = associationSettings(data?.content);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return members.filter((m) => {
       const matchCat = category === 'Toutes' || (m.categorie || 'Non classée') === category;
-      const matchText = !q || `${m.nom} ${m.dirigeant} ${m.secteur} ${m.categorie || ''}`.toLowerCase().includes(q);
+      const matchText = !q || `${m.nom} ${m.dirigeant} ${m.secteur} ${m.categorie || ''} ${m.adresse || ''}`.toLowerCase().includes(q);
       return matchCat && matchText;
     });
   }, [members, search, category]);
@@ -31,7 +33,7 @@ export default function Annuaire() {
             {members.length} entreprises, un réseau.
           </h1>
           <p style={{ fontSize: 17, lineHeight: 1.6, color: 'var(--gray)', maxWidth: 600 }}>
-            Découvrez les entreprises membres du Business Club SLUC Nancy et prenez contact directement avec leurs dirigeants.
+            Découvrez les entreprises membres de {settings.association_name} et prenez contact directement avec leurs dirigeants.
           </p>
         </div>
       </section>

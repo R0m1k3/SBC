@@ -193,7 +193,7 @@ function Portal() {
       const d = await api.put('/api/member/profile', {
         nom: form.nom, secteur: form.secteur, categorie_id: form.categorie_id,
         dirigeant: form.dirigeant, email: form.email || '', tel: form.tel || '',
-        site: form.site || '', presentation: form.presentation || '',
+        site: form.site || '', adresse: form.adresse || '', presentation: form.presentation || '',
       });
       setMember(d.member);
       setForm(d.member);
@@ -287,6 +287,9 @@ function Portal() {
                 <label className="field">Site web
                   <input name="site" value={form.site || ''} onChange={onChange} maxLength={200} />
                 </label>
+                <label className="field">Adresse de l'entreprise
+                  <input name="adresse" value={form.adresse || ''} onChange={onChange} maxLength={300} placeholder="Numéro, rue, code postal et ville" />
+                </label>
               </div>
               {error && <p className="error-text" style={{ marginTop: 12 }}>{error}</p>}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 24 }}>
@@ -316,6 +319,9 @@ function Portal() {
               <span className="badge-cat">{catName}</span>
             </div>
             <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--gray)', marginBottom: 20 }}>{form.presentation}</p>
+            {form.adresse && (
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--gray-light)', marginBottom: 18 }}>{form.adresse}</p>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>
               <span style={{ fontSize: 13, color: 'var(--gray-light)' }}>{form.dirigeant}</span>
               <span className="btn-link">Voir la fiche →</span>

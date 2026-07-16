@@ -6,6 +6,7 @@ import { api, dateParts } from '../lib/api.js';
 import Modal from '../components/Modal.jsx';
 import PastEventCard from '../components/PastEventCard.jsx';
 import { AdhesionForm, AdhesionModal } from '../components/AdhesionForm.jsx';
+import { associationSettings } from '../lib/siteSettings.js';
 
 export function InscriptionModal({ rencontre, onClose, onDone }) {
   const { user, login } = useAuth();
@@ -13,6 +14,7 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
   const [participants, setParticipants] = useState(['']);
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [done, setDone] = useState(false);
+  const [wasRegistered, setWasRegistered] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const { jour, mois } = dateParts(rencontre.date_renc);
@@ -23,6 +25,7 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
     api.get(`/api/public/rencontres/${rencontre.id}/inscription`)
       .then((d) => {
         setContext(d);
+        setWasRegistered(d.participants.length > 0);
         setParticipants(d.participants.length ? d.participants.map((p) => p.nom) : [d.member.dirigeant || '']);
       })
       .catch((err) => setError(err.message));
@@ -67,7 +70,9 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
       <Modal onClose={onClose} maxWidth={460}>
         <div style={{ textAlign: 'center', padding: '50px 36px' }}>
           <div style={{ width: 60, height: 60, borderRadius: '50%', background: '#FBEDEC', color: 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, margin: '0 auto 22px' }}>✓</div>
-          <h3 className="serif" style={{ fontSize: 26, fontWeight: 600, marginBottom: 10 }}>Inscription enregistrée</h3>
+          <h3 className="serif" style={{ fontSize: 26, fontWeight: 600, marginBottom: 10 }}>
+            {wasRegistered ? 'Inscription modifiée' : 'Inscription enregistrée'}
+          </h3>
           <p style={{ fontSize: 15, color: 'var(--gray)', lineHeight: 1.6, marginBottom: 8 }}>
             Votre demande pour <strong>{rencontre.titre}</strong> est bien enregistrée.
           </p>
@@ -84,7 +89,7 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
     <Modal
       onClose={onClose}
       maxWidth={460}
-      header={{ kicker: 'Inscription', title: rencontre.titre, meta: `${jour} ${mois} · ${rencontre.heure} · ${rencontre.lieu}` }}
+      header={{ kicker: wasRegistered ? 'Modifier mon inscription' : 'Inscription', title: rencontre.titre, meta: `${jour} ${mois} · ${rencontre.heure} · ${rencontre.lieu}` }}
     >
       {!user && (
         <form onSubmit={submitLogin} style={{ padding: '28px 30px' }}>
@@ -160,9 +165,25 @@ export function InscriptionModal({ rencontre, onClose, onDone }) {
 
 export default function Home() {
   const { data, reload } = usePublicData();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [inscrRenc, setInscrRenc] = useState(null);
   const [adhesionOpen, setAdhesionOpen] = useState(false);
+  const [registrations, setRegistrations] = useState({});
+
+  const refreshRegistrations = () => {
+    if (user?.role !== 'member' || user.mustChangePassword) {
+      setRegistrations({});
+      return Promise.resolve();
+    }
+    return api.get('/api/member/inscriptions').then((result) => {
+      setRegistrations(Object.fromEntries(result.inscriptions.map((item) => [item.rencontre_id, item])));
+    }).catch(() => setRegistrations({}));
+  };
+
+  useEffect(() => {
+    refreshRegistrations();
+  }, [user]);
 
   // Registration links in invitation emails point to /?inscription=<id> :
   // once the public data is loaded, open the matching inscription modal.
@@ -195,6 +216,7 @@ export default function Home() {
   const rencontres = data?.rencontres ?? [];
   const passees = data?.rencontresPassees ?? [];
   const content = data?.content ?? {};
+  const settings = associationSettings(content);
   const marquee = members.concat(members);
 
   return (
@@ -207,7 +229,7 @@ export default function Home() {
             Le business se joue en <em style={{ fontStyle: 'italic', color: 'var(--red)' }}>équipe</em>.
           </h1>
           <p style={{ fontSize: 18, lineHeight: 1.65, color: 'var(--gray)', maxWidth: 480, marginBottom: 38 }}>
-            Depuis 30 ans, le Business Club rassemble les dirigeants du Grand Est autour des valeurs du sport
+            Depuis 30 ans, {settings.association_name} rassemble les dirigeants du Grand Est autour des valeurs du sport
             de haut niveau : performance, engagement et esprit collectif.
           </p>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -313,6 +335,8 @@ export default function Home() {
           {rencontres.map((e) => {
             const { jour, mois } = dateParts(e.date_renc);
             const restantes = Math.max(0, e.places - e.inscrits);
+            const registration = registrations[e.id];
+            const isRegistered = Boolean(registration);
             return (
               <div key={e.id} className="card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <div className={e.image_path ? '' : 'placeholder-pattern'} style={{ height: 170, position: 'relative' }}>
@@ -331,14 +355,16 @@ export default function Home() {
                   <h3 className="serif" style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.2, marginBottom: 10 }}>{e.titre}</h3>
                   <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--gray)', flex: 1 }}>{e.description}</p>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, paddingTop: 18, borderTop: '1px solid var(--border-soft)' }}>
-                    <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600 }}>
-                      {restantes > 0 ? `${restantes} places restantes` : 'Complet'}
+                    <span style={{ fontSize: 13, color: isRegistered ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
+                      {isRegistered ? '✓ Inscrit' : (restantes > 0 ? `${restantes} places restantes` : 'Complet')}
                       <small style={{ display: 'block', color: 'var(--gray-light)', fontWeight: 400, marginTop: 3 }}>
-                        Max. {e.participants_par_compte} par compte
+                        {isRegistered
+                          ? `${registration.participants} participant${registration.participants > 1 ? 's' : ''} · ${registration.confirmee ? 'Confirmée' : 'En attente'}`
+                          : `Max. ${e.participants_par_compte} par compte`}
                       </small>
                     </span>
-                    <button className="btn btn-dark btn-sm" style={{ fontSize: 13.5 }} disabled={restantes === 0} onClick={() => setInscrRenc(e)}>
-                      S'inscrire
+                    <button className="btn btn-dark btn-sm" style={{ fontSize: 13.5 }} disabled={!isRegistered && restantes === 0} onClick={() => setInscrRenc(e)}>
+                      {isRegistered ? 'Modifier' : "S'inscrire"}
                     </button>
                   </div>
                 </div>
@@ -394,7 +420,15 @@ export default function Home() {
       </section>
 
       {inscrRenc && (
-        <InscriptionModal key={inscrRenc.id} rencontre={inscrRenc} onClose={closeInscription} onDone={reload} />
+        <InscriptionModal
+          key={inscrRenc.id}
+          rencontre={inscrRenc}
+          onClose={closeInscription}
+          onDone={() => {
+            reload();
+            refreshRegistrations();
+          }}
+        />
       )}
       {adhesionOpen && <AdhesionModal onClose={closeAdhesion} />}
     </main>

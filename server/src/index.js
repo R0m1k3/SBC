@@ -31,6 +31,7 @@ app.use(
         fontSrc: ['https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'blob:'],
         connectSrc: ["'self'"],
+        frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com'],
         frameAncestors: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],

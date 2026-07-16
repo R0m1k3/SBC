@@ -33,7 +33,7 @@ const adminOnly = requireAuth('admin');
 
 const MEMBER_SQL = `
   SELECT m.id, m.nom, m.secteur, m.categorie_id, c.name AS categorie, m.dirigeant,
-         m.adhesion, m.email, m.tel, m.site, m.presentation, m.valide,
+         m.adhesion, m.email, m.tel, m.site, m.adresse, m.presentation, m.valide,
          m.logo_path, m.photo_path,
          (u.id IS NOT NULL) AS has_login,
          COALESCE(u.must_change_password, false) AS must_change_password,
@@ -52,6 +52,11 @@ const INSCR_SQL = `
   SELECT i.id, i.nom, i.entreprise, i.email, i.tel, i.statut, i.created_at,
          i.rencontre_id, r.titre AS rencontre
     FROM inscriptions i JOIN rencontres r ON r.id = i.rencontre_id`;
+
+async function loadAssociationSettings() {
+  const result = await query(`SELECT key, value FROM site_content WHERE key LIKE 'association_%'`);
+  return Object.fromEntries(result.rows.map((row) => [row.key, row.value]));
+}
 
 // ---------- Dashboard (admin only) ----------
 adminRouter.get('/dashboard', adminOnly, async (_req, res, next) => {
@@ -89,10 +94,10 @@ adminRouter.post('/members', validate(adminMemberSchema), async (req, res, next)
   try {
     const d = req.data;
     const result = await query(
-      `INSERT INTO members (nom, secteur, categorie_id, dirigeant, adhesion, email, tel, site, presentation, valide)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      `INSERT INTO members (nom, secteur, categorie_id, dirigeant, adhesion, email, tel, site, adresse, presentation, valide)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
       [d.nom, d.secteur, d.categorie_id ?? null, d.dirigeant, new Date().getFullYear(),
-       d.email || null, d.tel, d.site, d.presentation, d.valide ?? true]
+       d.email || null, d.tel, d.site, d.adresse, d.presentation, d.valide ?? true]
     );
     const id = result.rows[0].id;
     // A login account (with a temporary password) is only created when an
@@ -120,10 +125,10 @@ adminRouter.put('/members/:id', validate(idParam, 'params'), validate(adminMembe
     const d = req.data;
     const result = await query(
       `UPDATE members SET nom=$1, secteur=$2, categorie_id=$3, dirigeant=$4, email=$5,
-              tel=$6, site=$7, presentation=$8, valide=COALESCE($9, valide), updated_at=now()
-        WHERE id=$10 RETURNING id`,
+              tel=$6, site=$7, adresse=$8, presentation=$9, valide=COALESCE($10, valide), updated_at=now()
+        WHERE id=$11 RETURNING id`,
       [d.nom, d.secteur, d.categorie_id ?? null, d.dirigeant, d.email || null,
-       d.tel, d.site, d.presentation, d.valide ?? null, req.params.id]
+       d.tel, d.site, d.adresse, d.presentation, d.valide ?? null, req.params.id]
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'Membre introuvable' });
     res.json({ ok: true });
@@ -257,7 +262,8 @@ adminRouter.post('/rencontres/:id/email', validate(idParam, 'params'), validate(
         // invalid base — keep the fallback
       }
     }
-    res.json(buildInvitationEmail({ rencontre: result.rows[0], baseUrl, texts }));
+    const association = await loadAssociationSettings();
+    res.json(buildInvitationEmail({ rencontre: result.rows[0], baseUrl, texts, association }));
   } catch (err) {
     next(err);
   }
@@ -281,7 +287,8 @@ adminRouter.post('/emails/preview', adminOnly, validate(customEmailSchema), asyn
       const parsed = new URL(base);
       if (parsed.protocol === 'http:' || parsed.protocol === 'https:') baseUrl = parsed.origin;
     }
-    res.json(buildCustomEmail({ content, baseUrl }));
+    const association = await loadAssociationSettings();
+    res.json(buildCustomEmail({ content, baseUrl, association }));
   } catch (err) {
     next(err);
   }

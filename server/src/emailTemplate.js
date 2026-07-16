@@ -1,3 +1,5 @@
+import { associationSettings } from './siteSettings.js';
+
 // Invitation email for a rencontre, generated on demand from the admin
 // backend. Email-client constraints apply: table layout, inline styles,
 // web-safe font stacks, absolute URLs. The palette mirrors the site theme
@@ -17,7 +19,8 @@ function escML(v) {
 
 // Default wording of each editable zone. The admin can rewrite any of
 // them in the composer; clearing a field removes the block entirely.
-export function defaultEmailTexts() {
+export function defaultEmailTexts(association = {}) {
+  const settings = associationSettings(association);
   return {
     greeting: 'Chère membre, cher membre,',
     intro:
@@ -27,13 +30,14 @@ export function defaultEmailTexts() {
     outro:
       "Les places sont limitées — pensez à vous inscrire dès maintenant. N'hésitez pas à "
       + "transférer cette invitation à un dirigeant de votre réseau qui souhaiterait découvrir le Club.",
-    signature: "À très bientôt,\nL'équipe du Business Club SLUC Nancy",
+    signature: `À très bientôt,\nL'équipe de ${settings.association_name}`,
   };
 }
 
-export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
+export function buildInvitationEmail({ rencontre, baseUrl, texts = {}, association = {} }) {
   const r = rencontre;
-  const defaults = defaultEmailTexts();
+  const settings = associationSettings(association);
+  const defaults = defaultEmailTexts(settings);
   // undefined -> default wording; '' (cleared by the admin) -> block hidden
   const t = {
     greeting: texts.greeting ?? defaults.greeting,
@@ -109,11 +113,10 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   <tr><td bgcolor="#161514" style="background-color:#161514;padding:26px 40px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;"><tr>
       <td width="52" valign="middle">
-        <img src="${esc(logoUrl)}" width="52" height="52" alt="SLUC Business Club Nancy" style="display:block;border-radius:6px;background-color:#FFFFFF;">
+        <img src="${esc(logoUrl)}" width="52" height="52" alt="${esc(settings.association_name)}" style="display:block;border-radius:6px;background-color:#FFFFFF;">
       </td>
       <td valign="middle" style="padding-left:16px;">
-        <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#FFFFFF;line-height:1.1;">Business Club</div>
-        <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#E0777A;font-weight:bold;padding-top:4px;">SLUC Nancy</div>
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:bold;color:#FFFFFF;line-height:1.1;">${esc(settings.association_name)}</div>
       </td>
     </tr></table>
   </td></tr>
@@ -153,8 +156,8 @@ export function buildInvitationEmail({ rencontre, baseUrl, texts = {} }) {
   </td></tr>
 
   <tr><td bgcolor="#0F0E0D" style="background-color:#0F0E0D;padding:24px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#B7AFA6;line-height:22px;">
-    Business Club SLUC Nancy &middot; Palais des Sports Jean Weille, Nancy<br>
-    <a href="mailto:contact@sluc-businessclub.fr" style="color:#E0777A;text-decoration:none;">contact@sluc-businessclub.fr</a>
+    ${esc(settings.association_name)}${settings.association_address ? ` &middot; ${escML(settings.association_address)}` : ''}<br>
+    ${settings.association_contact ? `${esc(settings.association_contact)} &middot; ` : ''}${settings.association_email ? `<a href="mailto:${esc(settings.association_email)}" style="color:#E0777A;text-decoration:none;">${esc(settings.association_email)}</a>` : ''}${settings.association_phone ? ` &middot; ${esc(settings.association_phone)}` : ''}
   </td></tr>
 
 </table>
