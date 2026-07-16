@@ -132,7 +132,10 @@ function ConsentRecordModal({ member, onClose }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
               <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Signataire</div>{consent.signatory_name}</div>
               <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Date</div>{new Date(consent.created_at).toLocaleString('fr-FR')}</div>
-              <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Adresse IP</div>{consent.ip || '—'}</div>
+              <div>
+                <div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Adresse IP</div>
+                {consent.ip_unavailable ? 'Non disponible (ancienne signature)' : (consent.ip || '—')}
+              </div>
               <div><div style={{ fontSize: 11.5, color: 'var(--gray-light)' }}>Version</div>{consent.consent_version || '—'}</div>
             </div>
             {consent.signature_png && (

@@ -54,7 +54,7 @@ services:
       # lets the app read X-Forwarded-* from the proxy, FORCE_HTTPS redirects
       # any plain-HTTP request to HTTPS.
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      TRUST_PROXY: ${TRUST_PROXY:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-true}
       FORCE_HTTPS: ${FORCE_HTTPS:-false}
       UPLOAD_DIR: /data/uploads
     volumes:

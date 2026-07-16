@@ -35,8 +35,8 @@ proxy_pass http://sbc-app:8321;
 ```
 
 Ce réseau doit exister avant le déploiement (`docker network create nginx_default`
-s'il manque). Derrière nginx en HTTPS, passez `TRUST_PROXY=true` et
-`COOKIE_SECURE=true`, et transmettez les en-têtes `Host`/`X-Forwarded-*`
+  s'il manque). Derrière nginx en HTTPS, conservez `TRUST_PROXY=true`, passez
+  `COOKIE_SECURE=true`, et transmettez les en-têtes `Host`/`X-Forwarded-*`
 (`proxy_set_header Host $http_host;`). La base de données, elle, reste hors du
 réseau du proxy.
 
@@ -199,8 +199,8 @@ l'utilisateur est bloqué sur un écran de changement obligatoire avant d'accéd
 
 ### Pour la production
 
-- Placez l'application derrière HTTPS (reverse-proxy TLS) et passez `COOKIE_SECURE=true`
-  et `TRUST_PROXY=true`.
+  - Placez l'application derrière HTTPS (reverse-proxy TLS), passez `COOKIE_SECURE=true`
+    et conservez `TRUST_PROXY=true`.
 - Surchargez les valeurs par défaut (`POSTGRES_PASSWORD`, `APP_DB_PASSWORD`,
   `JWT_SECRET`, mots de passe initiaux) et changez le mot de passe admin
   après la première connexion.

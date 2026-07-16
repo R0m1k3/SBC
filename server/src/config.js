@@ -36,8 +36,9 @@ export const config = {
   },
   jwtSecret,
   cookieSecure: process.env.COOKIE_SECURE === 'true',
-  // set to "true" only when running behind a reverse proxy (TLS termination)
-  trustProxy: process.env.TRUST_PROXY === 'true',
+  // The standard deployment has one reverse-proxy hop. Set this to false
+  // only when the app is deliberately exposed without a proxy.
+  trustProxy: process.env.TRUST_PROXY !== 'false',
   // when "true" (production behind a TLS proxy), plain-HTTP requests coming
   // through the proxy are 301-redirected to HTTPS. Direct requests without
   // an X-Forwarded-Proto header (e.g. the container healthcheck) are never

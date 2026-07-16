@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate.js';
 import { memberProfileSchema, imageConsentSchema } from '../schemas.js';
 import { imageUpload, saveImage, deleteImage } from '../uploads.js';
 import { IMAGE_CONSENT_VERSION } from '../imageConsent.js';
+import { requestClientIp } from '../clientIp.js';
 
 export const memberRouter = Router();
 
@@ -114,7 +115,7 @@ memberRouter.post('/image-consent', validate(imageConsentSchema), async (req, re
         signatoryName,
         decision === 'accepted' ? signaturePng : null,
         IMAGE_CONSENT_VERSION,
-        req.ip || '',
+        requestClientIp(req),
         (req.headers['user-agent'] || '').slice(0, 400),
       ]
     );

@@ -24,6 +24,7 @@ import { buildInvitationEmail } from '../emailTemplate.js';
 import { buildCustomEmail } from '../customEmailTemplate.js';
 import { buildProcessingRegister, buildImageConsentForm } from '../complianceDocuments.js';
 import { buildMembersPdf, buildMembersWorkbook } from '../memberDocuments.js';
+import { isPrivateClientIp, normalizeClientIp } from '../clientIp.js';
 import { billingRouter } from './billing.js';
 
 export const adminRouter = Router();
@@ -223,7 +224,18 @@ adminRouter.get('/members/:id/image-consent', validate(idParam, 'params'), async
          FROM image_consents WHERE member_id = $1 ORDER BY created_at DESC LIMIT 1`,
       [req.params.id]
     );
-    res.json({ consent: result.rows[0] || null });
+    const consent = result.rows[0] || null;
+    if (!consent) return res.json({ consent: null });
+
+    const storedIp = normalizeClientIp(consent.ip);
+    const ipUnavailable = Boolean(storedIp && isPrivateClientIp(storedIp));
+    res.json({
+      consent: {
+        ...consent,
+        ip: ipUnavailable ? '' : storedIp,
+        ip_unavailable: ipUnavailable,
+      },
+    });
   } catch (err) {
     next(err);
   }
