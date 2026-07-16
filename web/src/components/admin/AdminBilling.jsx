@@ -28,7 +28,6 @@ function SettingsPanel({ season, settings, onSaved, onClose }) {
   const [form, setForm] = useState({
     sluc_partner_amount_ht: settings.sluc_partner_amount_ht ?? 0,
     non_partner_amount_ht: settings.non_partner_amount_ht ?? 0,
-    vat_rate: settings.vat_rate ?? 20,
     payment_due_days: settings.payment_due_days ?? 30,
     iban: settings.iban || '',
     legal_mentions: settings.legal_mentions || '',
@@ -56,23 +55,17 @@ function SettingsPanel({ season, settings, onSaved, onClose }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 22 }}>
         <div>
           <h3 className="serif" style={{ fontSize: 20, fontWeight: 600 }}>Paramètres de la saison {seasonLabel(season)}</h3>
-          <p style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 5 }}>Les montants sont saisis hors taxes. La TVA et le TTC sont calculés à la génération.</p>
+          <p style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 5 }}>L'association n'est pas soumise à la TVA. La mention de l'article 293 B du CGI est ajoutée automatiquement aux factures.</p>
         </div>
         {settings.configured && <button type="button" className="btn-link-gray" onClick={onClose}>Fermer</button>}
       </div>
       <form onSubmit={submit}>
-        <div className="grid-4" style={{ gap: 12 }}>
-          <label className="field">Partenaire SLUC - HT
+        <div className="grid-3" style={{ gap: 12 }}>
+          <label className="field">Montant partenaire SLUC
             <input name="sluc_partner_amount_ht" type="number" min="0" max="1000000" step="0.01" value={form.sluc_partner_amount_ht} onChange={change} required />
           </label>
-          <label className="field">Non partenaire - HT
+          <label className="field">Montant non partenaire
             <input name="non_partner_amount_ht" type="number" min="0" max="1000000" step="0.01" value={form.non_partner_amount_ht} onChange={change} required />
-          </label>
-          <label className="field">TVA
-            <div style={{ position: 'relative' }}>
-              <input name="vat_rate" type="number" min="0" max="100" step="0.01" value={form.vat_rate} onChange={change} required style={{ paddingRight: 32 }} />
-              <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-light)' }}>%</span>
-            </div>
           </label>
           <label className="field">Échéance
             <div style={{ position: 'relative' }}>
@@ -132,7 +125,7 @@ function PaymentModal({ member, onClose, onSaved }) {
   };
 
   return (
-    <Modal onClose={onClose} maxWidth={480} header={{ kicker: 'Règlement', title: member.nom, meta: `${member.invoice_number} · ${euro(member.amount_ttc)}` }}>
+    <Modal onClose={onClose} maxWidth={480} header={{ kicker: 'Règlement', title: member.nom, meta: `${member.invoice_number} · ${euro(member.amount_ht)}` }}>
       <form onSubmit={submit} style={{ padding: '26px 30px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <label className="field">Mode de règlement
@@ -282,16 +275,16 @@ export function BillingTab() {
 
       {!data.settings.configured && (
         <div style={{ padding: '14px 18px', background: '#FBF0E6', border: '1px solid #F0D6BC', borderRadius: 6, color: '#8A5A22', marginBottom: 22, fontSize: 13.5 }}>
-          Configurez les tarifs, la TVA et l'IBAN avant de générer les factures de cette saison.
+          Configurez les tarifs et l'IBAN avant de générer les factures de cette saison.
         </div>
       )}
 
       <div className="grid-4" style={{ marginBottom: 22 }}>
         {[
-          ['Facturé TTC', euro(stats.total_invoiced), `${stats.invoiced_count} facture${stats.invoiced_count > 1 ? 's' : ''}`],
+          ['Facturé', euro(stats.total_invoiced), `${stats.invoiced_count} facture${stats.invoiced_count > 1 ? 's' : ''}`],
           ['Encaissé', euro(stats.total_paid), `${stats.paid_count} adhésion${stats.paid_count > 1 ? 's' : ''} à jour`],
           ['À encaisser', euro(stats.total_outstanding), `${stats.unpaid_count} règlement${stats.unpaid_count > 1 ? 's' : ''} attendu${stats.unpaid_count > 1 ? 's' : ''}`],
-          ['Taux de règlement', `${recovery} %`, `TVA encaissée ${euro(stats.vat_collected)}`],
+          ['Taux de règlement', `${recovery} %`, `${stats.paid_count} facture${stats.paid_count > 1 ? 's' : ''} réglée${stats.paid_count > 1 ? 's' : ''}`],
         ].map(([label, value, detail]) => (
           <div key={label} className="card" style={{ borderRadius: 6, padding: 22 }}>
             <div style={{ fontSize: 12, color: 'var(--gray-light)', marginBottom: 10 }}>{label}</div>
@@ -330,7 +323,7 @@ export function BillingTab() {
                         <option value="non_partner">Non partenaire SLUC</option>
                       </select>
                     </td>
-                    <td>{member.invoice_id ? euro(member.amount_ttc) : <><strong>{euro(expectedHt)}</strong><small style={{ display: 'block', color: 'var(--gray-light)', marginTop: 3 }}>HT avant TVA</small></>}</td>
+                    <td>{member.invoice_id ? euro(member.amount_ht) : <><strong>{euro(expectedHt)}</strong><small style={{ display: 'block', color: 'var(--gray-light)', marginTop: 3 }}>TVA non applicable</small></>}</td>
                     <td>
                       {member.invoice_id ? <>
                         <div style={{ fontSize: 12.5, fontWeight: 600 }}>{member.invoice_number}</div>

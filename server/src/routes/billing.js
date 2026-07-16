@@ -19,7 +19,6 @@ billingRouter.use(requireAuth(['admin', 'treasurer']));
 const DEFAULT_SETTINGS = {
   sluc_partner_amount_ht: 0,
   non_partner_amount_ht: 0,
-  vat_rate: 20,
   payment_due_days: 30,
   iban: '',
   legal_mentions: '',
@@ -32,7 +31,7 @@ function currentSeason(date = new Date()) {
 
 function numberRow(row) {
   if (!row) return row;
-  for (const key of ['sluc_partner_amount_ht', 'non_partner_amount_ht', 'vat_rate', 'amount_ht', 'vat_amount', 'amount_ttc']) {
+  for (const key of ['sluc_partner_amount_ht', 'non_partner_amount_ht', 'amount_ht', 'amount_ttc']) {
     if (row[key] != null) row[key] = Number(row[key]);
   }
   return row;
@@ -45,8 +44,7 @@ async function loadSettings(season, client = { query }) {
 
 async function loadPaidRows(season) {
   const result = await query(
-    `SELECT invoice_number, member_name, billing_type, paid_at, payment_method,
-            amount_ht, vat_amount, amount_ttc
+    `SELECT invoice_number, member_name, billing_type, paid_at, payment_method, amount_ht
        FROM membership_invoices
       WHERE season = $1 AND status = 'payee'
       ORDER BY paid_at, member_name`,
@@ -76,7 +74,7 @@ billingRouter.get('/seasons/:season', validate(billingSeasonParam, 'params'), as
       query(
         `SELECT m.id, m.nom, m.dirigeant, m.email, m.adresse, m.billing_type, m.valide,
                 i.id AS invoice_id, i.invoice_number, i.issued_at, i.due_date,
-                i.amount_ht, i.vat_rate, i.vat_amount, i.amount_ttc,
+                i.amount_ht,
                 i.status, i.payment_method, i.paid_at
            FROM members m
            LEFT JOIN LATERAL (
@@ -93,10 +91,9 @@ billingRouter.get('/seasons/:season', validate(billingSeasonParam, 'params'), as
            COUNT(*) FILTER (WHERE status <> 'annulee')::int AS invoiced_count,
            COUNT(*) FILTER (WHERE status = 'payee')::int AS paid_count,
            COUNT(*) FILTER (WHERE status = 'emise')::int AS unpaid_count,
-           COALESCE(SUM(amount_ttc) FILTER (WHERE status <> 'annulee'), 0)::float8 AS total_invoiced,
-           COALESCE(SUM(amount_ttc) FILTER (WHERE status = 'payee'), 0)::float8 AS total_paid,
-           COALESCE(SUM(amount_ttc) FILTER (WHERE status = 'emise'), 0)::float8 AS total_outstanding,
-           COALESCE(SUM(vat_amount) FILTER (WHERE status = 'payee'), 0)::float8 AS vat_collected
+           COALESCE(SUM(amount_ht) FILTER (WHERE status <> 'annulee'), 0)::float8 AS total_invoiced,
+           COALESCE(SUM(amount_ht) FILTER (WHERE status = 'payee'), 0)::float8 AS total_paid,
+           COALESCE(SUM(amount_ht) FILTER (WHERE status = 'emise'), 0)::float8 AS total_outstanding
          FROM membership_invoices WHERE season = $1`,
         [season]
       ),
@@ -119,16 +116,16 @@ billingRouter.put('/seasons/:season/settings', validate(billingSeasonParam, 'par
     await query(
       `INSERT INTO billing_season_settings
          (season, sluc_partner_amount_ht, non_partner_amount_ht, vat_rate, payment_due_days, iban, legal_mentions)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       VALUES ($1, $2, $3, 0, $4, $5, $6)
        ON CONFLICT (season) DO UPDATE SET
          sluc_partner_amount_ht=EXCLUDED.sluc_partner_amount_ht,
          non_partner_amount_ht=EXCLUDED.non_partner_amount_ht,
-         vat_rate=EXCLUDED.vat_rate,
+         vat_rate=0,
          payment_due_days=EXCLUDED.payment_due_days,
          iban=EXCLUDED.iban,
          legal_mentions=EXCLUDED.legal_mentions,
          updated_at=now()`,
-      [req.params.season, d.sluc_partner_amount_ht, d.non_partner_amount_ht, d.vat_rate,
+      [req.params.season, d.sluc_partner_amount_ht, d.non_partner_amount_ht,
        d.payment_due_days, iban, d.legal_mentions]
     );
     res.json({ settings: await loadSettings(req.params.season) });
@@ -187,8 +184,7 @@ billingRouter.post('/seasons/:season/invoices', validate(billingSeasonParam, 'pa
       const amountHt = member.billing_type === 'sluc_partner'
         ? settings.sluc_partner_amount_ht
         : settings.non_partner_amount_ht;
-      const vatAmount = Math.round(amountHt * settings.vat_rate) / 100;
-      const amountTtc = Math.round((amountHt + vatAmount) * 100) / 100;
+      const amountNet = Math.round(amountHt * 100) / 100;
       const sequence = await client.query(`SELECT nextval('billing_invoice_number_seq') AS n`);
       const invoiceNumber = `FAC-${req.params.season.slice(0, 4)}-${String(sequence.rows[0].n).padStart(5, '0')}`;
       await client.query(
@@ -197,8 +193,8 @@ billingRouter.post('/seasons/:season/invoices', validate(billingSeasonParam, 'pa
            billing_type, amount_ht, vat_rate, vat_amount, amount_ttc, issuer_snapshot)
          VALUES ($1, $2, $3, CURRENT_DATE + $4::int, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb)`,
         [req.params.season, member.id, invoiceNumber, settings.payment_due_days, member.nom,
-         member.adresse || '', member.email || '', member.billing_type, amountHt, settings.vat_rate,
-         vatAmount, amountTtc, JSON.stringify(issuerSnapshot)]
+         member.adresse || '', member.email || '', member.billing_type, amountNet, 0,
+         0, amountNet, JSON.stringify(issuerSnapshot)]
       );
       created += 1;
     }

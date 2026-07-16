@@ -109,7 +109,6 @@ const iban = z.string().trim().max(42).refine(
 export const billingSettingsSchema = z.object({
   sluc_partner_amount_ht: z.coerce.number().min(0).max(1000000),
   non_partner_amount_ht: z.coerce.number().min(0).max(1000000),
-  vat_rate: z.coerce.number().min(0).max(100),
   payment_due_days: z.coerce.number().int().min(0).max(365),
   iban,
   legal_mentions: trimmed(3000).optional().default(''),

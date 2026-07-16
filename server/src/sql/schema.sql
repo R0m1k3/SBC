@@ -168,13 +168,17 @@ CREATE TABLE IF NOT EXISTS billing_season_settings (
     season                TEXT PRIMARY KEY CHECK (season ~ '^[0-9]{4}-[0-9]{4}$'),
     sluc_partner_amount_ht NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (sluc_partner_amount_ht >= 0),
     non_partner_amount_ht  NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (non_partner_amount_ht >= 0),
-    vat_rate               NUMERIC(5,2) NOT NULL DEFAULT 20 CHECK (vat_rate BETWEEN 0 AND 100),
+    vat_rate               NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (vat_rate = 0),
     payment_due_days       INTEGER NOT NULL DEFAULT 30 CHECK (payment_due_days BETWEEN 0 AND 365),
     iban                   TEXT NOT NULL DEFAULT '' CHECK (char_length(iban) <= 42),
     legal_mentions         TEXT NOT NULL DEFAULT '' CHECK (char_length(legal_mentions) <= 3000),
     created_at             TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE billing_season_settings ALTER COLUMN vat_rate SET DEFAULT 0;
+UPDATE billing_season_settings SET vat_rate = 0 WHERE vat_rate <> 0;
+ALTER TABLE billing_season_settings DROP CONSTRAINT IF EXISTS billing_season_settings_vat_rate_check;
+ALTER TABLE billing_season_settings ADD CONSTRAINT billing_season_settings_vat_rate_check CHECK (vat_rate = 0);
 
 CREATE SEQUENCE IF NOT EXISTS billing_invoice_number_seq START WITH 1;
 
@@ -205,3 +209,8 @@ CREATE INDEX IF NOT EXISTS idx_membership_invoices_season ON membership_invoices
 CREATE INDEX IF NOT EXISTS idx_membership_invoices_member ON membership_invoices(member_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_membership_invoices_active_member_season
   ON membership_invoices(member_id, season) WHERE status <> 'annulee';
+-- Correct unpaid invoices created before the association's VAT exemption was
+-- reflected in the billing module. Paid invoices remain immutable history.
+UPDATE membership_invoices
+   SET vat_rate = 0, vat_amount = 0, amount_ttc = amount_ht, updated_at = now()
+ WHERE status = 'emise' AND (vat_rate <> 0 OR vat_amount <> 0 OR amount_ttc <> amount_ht);
