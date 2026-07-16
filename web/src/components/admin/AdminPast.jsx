@@ -6,7 +6,9 @@ import ImageSlot from '../ImageSlot.jsx';
 
 // Manages the gallery of one past event: unlimited photos, add / delete /
 // set-as-principal. Only available once the event exists (has an id).
-function PhotoManager({ eventId, photos, setPhotos }) {
+// `refused` lists participants of the linked rencontre who declined image
+// publication, warned about before photos are added.
+function PhotoManager({ eventId, photos, setPhotos, refused = [] }) {
   const { user } = useAuth();
   const [error, setError] = useState('');
 
@@ -46,6 +48,15 @@ function PhotoManager({ eventId, photos, setPhotos }) {
 
   return (
     <div>
+      {refused.length > 0 && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 16px', background: '#F6E4E4', border: '1px solid #E3B7B5', borderRadius: 6, fontSize: 12.5, color: '#8A2C29', lineHeight: 1.5, marginBottom: 14 }}>
+          <span style={{ fontSize: 15 }}>⚠</span>
+          <span>
+            <strong>{refused.length} participant{refused.length > 1 ? 's ont' : ' a'} refusé la publication de {refused.length > 1 ? 'leur' : 'son'} image</strong> :{' '}
+            {refused.join(', ')}. Ne {refused.length > 1 ? 'les' : 'le/la'} faites pas figurer sur les photos publiées ici.
+          </span>
+        </div>
+      )}
       <div className="field" style={{ marginBottom: 8 }}>Photos ({photos.length})</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10 }}>
         {photos.map((p, idx) => (
@@ -82,12 +93,22 @@ function PastEventFormModal({ event, rencontres, onClose, onSaved }) {
       : { date_label: '', lieu: '', titre: '', texte: '', participants: 0, rencontre_id: '' }
   );
   const [photos, setPhotos] = useState(event?.photos || []);
+  const [refused, setRefused] = useState([]);
   const [error, setError] = useState('');
   const [savedMsg, setSavedMsg] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const linked = form.rencontre_id ? rencontres.find((r) => r.id === Number(form.rencontre_id)) : null;
+
+  // When the event is linked to a rencontre, list the participants who
+  // declined image publication so the admin avoids publishing their photo.
+  useEffect(() => {
+    if (!form.rencontre_id) { setRefused([]); return; }
+    api.get(`/api/admin/rencontres/${form.rencontre_id}/inscriptions`)
+      .then((d) => setRefused(d.inscriptions.filter((i) => i.image_consent === false).map((i) => i.nom)))
+      .catch(() => setRefused([]));
+  }, [form.rencontre_id]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -176,7 +197,7 @@ function PastEventFormModal({ event, rencontres, onClose, onSaved }) {
       {savedId && (
         <div style={{ padding: '4px 30px 30px', borderTop: '1px solid var(--border-soft)', marginTop: 6 }}>
           <div style={{ paddingTop: 20 }}>
-            <PhotoManager eventId={savedId} photos={photos} setPhotos={setPhotos} />
+            <PhotoManager eventId={savedId} photos={photos} setPhotos={setPhotos} refused={refused} />
             <p style={{ fontSize: 12.5, color: 'var(--gray-light)', lineHeight: 1.55, marginTop: 12 }}>
               La première photo (★ principale) est mise en avant sur la page d'accueil. Le nombre de photos
               affiché sur le site correspond automatiquement aux photos ci-dessus.
