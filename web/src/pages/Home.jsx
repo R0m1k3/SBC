@@ -7,6 +7,7 @@ import Modal from '../components/Modal.jsx';
 import PastEventCard from '../components/PastEventCard.jsx';
 import { AdhesionForm, AdhesionModal } from '../components/AdhesionForm.jsx';
 import { associationSettings } from '../lib/siteSettings.js';
+import HeroPlayerSilhouette from '../components/HeroPlayerSilhouette.jsx';
 
 export function InscriptionModal({ rencontre, onClose, onDone }) {
   const { user, login } = useAuth();
@@ -265,13 +266,16 @@ export default function Home() {
               <button className="btn btn-outline">Découvrir l'association</button>
             </Link>
           </div>
-          <div style={{ display: 'flex', gap: 42, marginTop: 54, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
-            {[[String(members.length), 'entreprises membres'], [String(passees.length), 'rencontres organisées'], ['30 ans', 'de partenariat']].map(([n, l]) => (
-              <div key={l}>
-                <div className="serif" style={{ fontSize: 34, fontWeight: 600 }}>{n}</div>
-                <div style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 2 }}>{l}</div>
-              </div>
-            ))}
+          <div className="hero-stats-wrap" style={{ position: 'relative', marginTop: 54, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
+            <HeroPlayerSilhouette />
+            <div style={{ display: 'flex', gap: 42, position: 'relative', zIndex: 1 }}>
+              {[[String(members.length), 'entreprises membres'], [String(passees.length), 'rencontres organisées'], ['30 ans', 'de partenariat']].map(([n, l]) => (
+                <div key={l}>
+                  <div className="serif" style={{ fontSize: 34, fontWeight: 600 }}>{n}</div>
+                  <div style={{ fontSize: 13, color: 'var(--gray-light)', marginTop: 2 }}>{l}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <div style={{ position: 'relative' }}>
