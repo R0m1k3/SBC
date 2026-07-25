@@ -43,25 +43,6 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
   .marquee-fade { width: 40px; }
 }
 
-/* Hero stats background: a real video of a basketball player dribbling,
-   behind the "entreprises membres / rencontres organisées / X ans" row.
-   Pexels stock footage (free commercial license, no attribution required,
-   anonymous player), desaturated at runtime via CSS. */
-.hero-stats-wrap { overflow: visible; }
-.hero-stats-video {
-  position: absolute; right: -20px; bottom: -34px;
-  width: 420px; height: 130px;
-  object-fit: cover; object-position: 60% 35%;
-  pointer-events: none;
-  filter: grayscale(1) contrast(1.05) brightness(1.05);
-  opacity: .22;
-  /* Fades the video out over the stat text (left) and lets it show only
-     over the clear whitespace (right), so it never degrades the existing
-     text contrast. */
-  mask-image: linear-gradient(100deg, transparent 0%, transparent 26%, black 52%, black 100%);
-  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 26%, black 52%, black 100%);
-}
-
 .container { max-width: 1180px; margin: 0 auto; padding-left: 32px; padding-right: 32px; }
 .serif { font-family: var(--serif); }
 
@@ -267,7 +248,6 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 @media (max-width: 960px) {
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
   .hero-grid { grid-template-columns: 1fr !important; }
-  .hero-stats-video { width: 260px; height: 100px; right: -10px; bottom: -10px; }
 }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -294,7 +274,6 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 
 @media (max-width: 640px) {
   .container { padding-left: 20px; padding-right: 20px; }
-  .hero-stats-video { display: none; }
   .admin-nav { grid-template-columns: 1fr; gap: 20px; }
   .admin-sidebar-footer { align-items: stretch; flex-direction: column; }
   .admin-sidebar-action { width: 100%; }
