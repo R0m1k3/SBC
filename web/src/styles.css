@@ -43,58 +43,23 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
   .marquee-fade { width: 40px; }
 }
 
-/* Hero stats background: an animated basketball-player silhouette behind
-   the "entreprises membres / rencontres organisées / X ans" row. Original
-   illustration (not a photo), decorative only — see .hspl-* below. */
+/* Hero stats background: a real video of a basketball player dribbling,
+   behind the "entreprises membres / rencontres organisées / X ans" row.
+   Pexels stock footage (free commercial license, no attribution required,
+   anonymous player), desaturated at runtime via CSS. */
 .hero-stats-wrap { overflow: visible; }
-.hero-stats-silhouette {
-  position: absolute; right: -20px; bottom: -34px; width: 300px; height: auto;
+.hero-stats-video {
+  position: absolute; right: -20px; bottom: -34px;
+  width: 420px; height: 130px;
+  object-fit: cover; object-position: 60% 35%;
   pointer-events: none;
-  /* Fades the silhouette out over the stat text (left) and lets it show at
-     full (still very low) opacity only over the clear whitespace (right),
-     so it never degrades the existing text contrast. */
-  mask-image: linear-gradient(100deg, transparent 0%, transparent 24%, black 48%, black 100%);
-  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 24%, black 48%, black 100%);
-}
-.hspl-figure {
-  opacity: .08; transform-origin: 50% 100%;
-  animation: hspl-drift 7s ease-in-out infinite alternate, hspl-glow 5s ease-in-out infinite;
-}
-.hspl-ball {
-  opacity: .14; transform-box: fill-box; transform-origin: 50% 100%;
-  animation: hspl-ball-bounce 1.4s infinite;
-}
-.hspl-speedline {
-  opacity: .3;
-  animation: hspl-speedline 2.4s ease-out infinite;
-}
-.hspl-speedline:nth-child(2) { animation-delay: .3s; }
-.hspl-speedline:nth-child(3) { animation-delay: .6s; }
-
-@keyframes hspl-drift {
-  from { transform: translateY(0) rotate(0deg); }
-  to   { transform: translateY(-10px) rotate(-1.4deg); }
-}
-@keyframes hspl-glow {
-  0%, 100% { filter: drop-shadow(2px 0 0 rgba(193, 39, 45, 0)); }
-  50%      { filter: drop-shadow(2px 0 0 rgba(193, 39, 45, .18)); }
-}
-@keyframes hspl-ball-bounce {
-  0%   { transform: translateY(0); animation-timing-function: cubic-bezier(.55, 0, 1, .45); }
-  18%  { transform: translateY(38px) scaleY(.82) scaleX(1.1); animation-timing-function: cubic-bezier(0, .55, .45, 1); }
-  50%  { transform: translateY(0); animation-timing-function: cubic-bezier(.55, 0, 1, .45); }
-  68%  { transform: translateY(38px) scaleY(.82) scaleX(1.1); animation-timing-function: cubic-bezier(0, .55, .45, 1); }
-  100% { transform: translateY(0); }
-}
-@keyframes hspl-speedline {
-  0%   { opacity: 0; transform: translateX(6px); }
-  30%  { opacity: 1; transform: translateX(0); }
-  70%  { opacity: 1; transform: translateX(-4px); }
-  100% { opacity: 0; transform: translateX(-10px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hspl-figure, .hspl-ball { animation: none !important; }
-  .hspl-speedline { display: none !important; }
+  filter: grayscale(1) contrast(1.05) brightness(1.05);
+  opacity: .22;
+  /* Fades the video out over the stat text (left) and lets it show only
+     over the clear whitespace (right), so it never degrades the existing
+     text contrast. */
+  mask-image: linear-gradient(100deg, transparent 0%, transparent 26%, black 52%, black 100%);
+  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 26%, black 52%, black 100%);
 }
 
 .container { max-width: 1180px; margin: 0 auto; padding-left: 32px; padding-right: 32px; }
@@ -302,7 +267,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 @media (max-width: 960px) {
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
   .hero-grid { grid-template-columns: 1fr !important; }
-  .hero-stats-silhouette { width: 190px; right: -10px; bottom: -10px; }
+  .hero-stats-video { width: 260px; height: 100px; right: -10px; bottom: -10px; }
 }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -329,7 +294,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: var(--r
 
 @media (max-width: 640px) {
   .container { padding-left: 20px; padding-right: 20px; }
-  .hero-stats-silhouette { display: none; }
+  .hero-stats-video { display: none; }
   .admin-nav { grid-template-columns: 1fr; gap: 20px; }
   .admin-sidebar-footer { align-items: stretch; flex-direction: column; }
   .admin-sidebar-action { width: 100%; }

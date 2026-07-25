@@ -7,7 +7,7 @@ import Modal from '../components/Modal.jsx';
 import PastEventCard from '../components/PastEventCard.jsx';
 import { AdhesionForm, AdhesionModal } from '../components/AdhesionForm.jsx';
 import { associationSettings } from '../lib/siteSettings.js';
-import HeroPlayerSilhouette from '../components/HeroPlayerSilhouette.jsx';
+import HeroPlayerVideo from '../components/HeroPlayerVideo.jsx';
 
 export function InscriptionModal({ rencontre, onClose, onDone }) {
   const { user, login } = useAuth();
@@ -267,7 +267,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="hero-stats-wrap" style={{ position: 'relative', marginTop: 54, paddingTop: 34, borderTop: '1px solid var(--border)' }}>
-            <HeroPlayerSilhouette />
+            <HeroPlayerVideo />
             <div style={{ display: 'flex', gap: 42, position: 'relative', zIndex: 1 }}>
               {[[String(members.length), 'entreprises membres'], [String(passees.length), 'rencontres organisées'], ['30 ans', 'de partenariat']].map(([n, l]) => (
                 <div key={l}>

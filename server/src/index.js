@@ -50,6 +50,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ['https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'blob:'],
+        mediaSrc: ["'self'"],
         connectSrc: ["'self'"],
         frameSrc: ["'self'", 'https://www.google.com', 'https://maps.google.com'],
         frameAncestors: ["'none'"],
